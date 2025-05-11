@@ -55,9 +55,35 @@ const SectionButtons = ({
   </div>
 );
 
+interface FormData {
+  // Basic information (essential)
+  name: string;
+  dob: string;
+  gender: string;
+
+  // Guardian information (essential)
+  guardianName: string;
+  guardianPhone: string;
+  relationship: string;
+
+  // Disappearance details (essential)
+  lastSeenTime: string;
+  lastClothes: string;
+  lastKnownLocation: string;
+
+  // Physical description (essential)
+  physicalDesc: string;
+
+  // Additional information (optional)
+  additionalNotes: string;
+
+  // New field for form_type
+  form_type: string;
+}
+
 function AddNormalChild() {
   const [currentSection, setCurrentSection] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     // Basic information (essential)
     name: '',
     dob: '',
@@ -78,6 +104,9 @@ function AddNormalChild() {
 
     // Additional information (optional)
     additionalNotes: '',
+
+    // New field for form_type
+    form_type: 'child',
   });
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -198,6 +227,7 @@ function AddNormalChild() {
       lastKnownLocation: '',
       physicalDesc: '',
       additionalNotes: '',
+      form_type: 'child',
     });
     setCapturedImage(null);
     setCurrentSection(1);
@@ -232,7 +262,8 @@ function AddNormalChild() {
         address: '',
         phone_number: '',
         phone_company: '',
-        category: PERSON_CATEGORIES.CHILD
+        category: PERSON_CATEGORIES.CHILD,
+        form_type: 'child',
       };
 
       // Submit to API
@@ -538,7 +569,7 @@ function AddNormalChild() {
                 <label className="block text-white font-semibold mb-2">
                   Upload Child's Photo
                 </label>
-                
+
                 {/* Toggle between upload and camera capture */}
                 <div className="flex items-center space-x-4 mb-4">
                   <button
@@ -556,11 +587,13 @@ function AddNormalChild() {
                     )}
                   </div>
                 </div>
-                
+
                 {!useCamera ? (
                   <div
                     className="cursor-pointer"
-                    onClick={() => document.getElementById('fileInput')?.click()}
+                    onClick={() =>
+                      document.getElementById('fileInput')?.click()
+                    }
                   >
                     <AnimatedFaceIcon size="md" text="Click to upload" />
                     <input
@@ -584,12 +617,17 @@ function AddNormalChild() {
                             videoConstraints={{
                               width: 480,
                               height: 480,
-                              facingMode: "user"
+                              facingMode: 'user',
                             }}
                             className="w-full"
                           />
                           <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-                            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <svg
+                              width="100%"
+                              height="100%"
+                              viewBox="0 0 100 100"
+                              preserveAspectRatio="none"
+                            >
                               <path
                                 d="M20,20 L20,30 L30,30 M70,30 L80,30 L80,20 M80,80 L80,70 L70,70 M30,70 L20,70 L20,80"
                                 stroke="#3b82f6"
@@ -636,7 +674,7 @@ function AddNormalChild() {
                     )}
                   </div>
                 )}
-                
+
                 {capturedImage && !useCamera && (
                   <img
                     src={capturedImage}

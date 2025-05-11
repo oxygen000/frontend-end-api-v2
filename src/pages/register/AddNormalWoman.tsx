@@ -47,6 +47,7 @@ interface FormData {
   };
   image: File | null;
   useCamera: boolean;
+  form_type: string;
 }
 
 const initialFormData: FormData = {
@@ -86,6 +87,7 @@ const initialFormData: FormData = {
   },
   image: null,
   useCamera: false,
+  form_type: 'woman',
 };
 
 const SectionButtons = ({
@@ -259,7 +261,8 @@ const AddNormalWoman = () => {
         motorcycle_model: formData.vehicleInfo.vehicle || '',
         motorcycle_color: formData.vehicleInfo.color || '',
         manufacture_year: formData.vehicleInfo.manufactureYear || '',
-        category: PERSON_CATEGORIES.WOMAN
+        category: PERSON_CATEGORIES.WOMAN,
+        form_type: 'woman',
       };
 
       // Submit to API

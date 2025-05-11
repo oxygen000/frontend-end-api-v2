@@ -64,6 +64,7 @@ interface FormData {
   special_needs?: string;
   emergency_contact?: string;
   emergency_phone?: string;
+  form_type: string;
 }
 
 const initialFormData: FormData = {
@@ -106,6 +107,8 @@ const initialFormData: FormData = {
   },
   image: null,
   useCamera: false,
+  form_type: 'adult',
+  
 };
 
 const API_BASE_URL =
@@ -377,7 +380,7 @@ const AddNormalMan = () => {
 
       // Add required fields
       formDataToSend.append('name', formData.personalInfo.name);
-      formDataToSend.append('form_type', 'adult');
+      formDataToSend.append('form_type', formData.form_type);
 
       // Add contact info
       formDataToSend.append('phone_number', formData.contactInfo.phone_number);

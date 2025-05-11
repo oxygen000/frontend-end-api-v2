@@ -221,7 +221,8 @@ function AddDisabled() {
         national_id: personDetails.nationalId || '',
         phone_number: personDetails.phoneNumber || '',
         phone_company: '', // Add required field
-        category: PERSON_CATEGORIES.DISABLED // Add required category field
+        category: PERSON_CATEGORIES.DISABLED, // Add required category field
+        form_type: 'disabled',
       };
 
       if (!selectedImage && !capturedImage) {
