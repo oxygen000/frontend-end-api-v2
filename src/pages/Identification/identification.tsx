@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { motion } from 'framer-motion';
 import { FaCamera, FaRedo, FaUpload } from 'react-icons/fa';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import { recognizeFace, recognizeFaceBase64 } from '../../utils/apiUtils';
@@ -99,35 +98,26 @@ function Identification() {
       }
 
       // Handle successful identification
-      if (result.status === 'success') {
-        if (result.matches && result.matches.length > 0) {
-          const identifiedPerson = result.matches[0];
-          toast.success(`Identified: ${identifiedPerson.name}`);
-
-          // Navigate to the user's page
-          navigate(`/users/${identifiedPerson.id}`);
-        } else {
-          setError('No match found. Please try again with a clearer image.');
-          toast.error('No match found. Please try again with a clearer image.');
-        }
+      if (result.recognized) {
+        toast.success(`Identified: ${result.username}`);
+        // Navigate to the user's page
+        navigate(`/users/${result.user_id}`);
       } else {
-        setError(result.message || 'Identification failed');
-        toast.error(result.message || 'Identification failed');
+        setError(
+          result.message ||
+            'No match found. Please try again with a clearer image.'
+        );
+        toast.error(
+          result.message ||
+            'No match found. Please try again with a clearer image.'
+        );
       }
     } catch (error) {
       console.error('Error during identification:', error);
-
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Server error occurred';
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } else {
-        setError('An unexpected error occurred');
-        toast.error('An unexpected error occurred');
-      }
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -113,14 +113,7 @@ const SectionButtons = ({
         Next
       </button>
     )}
-    {!onNext && (
-      <button
-        type="submit"
-        className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors ml-auto"
-      >
-        Submit
-      </button>
-    )}
+    
   </div>
 );
 

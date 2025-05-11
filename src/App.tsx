@@ -34,7 +34,7 @@ function App() {
       <Route path="/register/child" element={<AddNormalChild />} />
       <Route path="/register/disabled" element={<AddDisabled />} />
       <Route path="/identification" element={<Identification />} />
-        <Route path="/user/:id" element={<Userdata />} />
+        <Route path="/users/:id" element={<Userdata />} />
       <Route path="/Search" element={<Search />} />
       <Route path="/profile" element={<Profiler />} />
     </Route>

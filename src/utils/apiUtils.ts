@@ -83,16 +83,12 @@ export const registerPersonWithFile = async (
     }
 
     // Make the API request
-    const response = await axios.post(
-      `${API_URL}/api/register/upload`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 60000, // Increase timeout for large files
-      }
-    );
+    const response = await axios.post(`${API_URL}/register/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000, // Increase timeout for large files
+    });
 
     return response.data;
   } catch (error) {
@@ -137,7 +133,7 @@ export const registerPersonWithBase64 = async (
 
     console.log('Sending base64 registration with keys:', Object.keys(payload));
 
-    const response = await axios.post(`${API_URL}/api/register`, payload, {
+    const response = await axios.post(`${API_URL}/register`, payload, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -166,34 +162,23 @@ export const registerPersonWithBase64 = async (
 /**
  * Recognize a face from an image file
  */
-export const recognizeFace = async (imageFile: File, userId?: string) => {
+export const recognizeFace = async (file: File, preselectedId?: string) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (preselectedId) {
+    formData.append('id', preselectedId);
+  }
+
   try {
-    const formData = new FormData();
-    formData.append('file', imageFile);
-
-    // If userId is provided, add it for specific verification
-    if (userId) {
-      formData.append('user_id', userId);
-    }
-
-    console.log('Sending face recognition request with file');
-
-    const response = await axios.post(`${API_URL}/api/recognize`, formData, {
+    const response = await axios.post(`${API_URL}/recognize`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 30000,
     });
-
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error('Face Recognition Error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
+      throw new Error(error.response?.data?.message || 'Recognition failed');
     }
     throw error;
   }
@@ -203,35 +188,18 @@ export const recognizeFace = async (imageFile: File, userId?: string) => {
  * Recognize a face from base64 image
  */
 export const recognizeFaceBase64 = async (
-  imageBase64: string,
-  userId?: string
+  base64Image: string,
+  preselectedId?: string
 ) => {
   try {
-    // Handle data URI format
-    if (imageBase64.startsWith('data:image')) {
-      imageBase64 = imageBase64.split(',')[1];
-    }
-
-    const payload = { image_base64: imageBase64, user_id: userId };
-
-    console.log('Sending face recognition request with base64');
-
-    const response = await axios.post(`${API_URL}/api/recognize`, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000,
+    const response = await axios.post(`${API_URL}/recognize`, {
+      image_base64: base64Image,
+      id: preselectedId,
     });
-
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error('Face Recognition Base64 Error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
+      throw new Error(error.response?.data?.message || 'Recognition failed');
     }
     throw error;
   }
@@ -327,17 +295,13 @@ export const registerManAlternative = async (
             Object.keys(payload)
           );
 
-          // Use the /api/register endpoint instead
-          const response = await axios.post(
-            `${API_URL}/api/register`,
-            payload,
-            {
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              timeout: 60000,
-            }
-          );
+          // Use the /register endpoint instead
+          const response = await axios.post(`${API_URL}/register`, payload, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 60000,
+          });
 
           resolve(response.data);
         } catch (error) {
@@ -366,7 +330,7 @@ export const registerManAlternative = async (
 };
 
 /**
- * Register a person using the /api/register/file endpoint
+ * Register a person using the /register/file endpoint
  */
 export const registerPersonWithFileEndpoint = async (
   file: File,
@@ -398,22 +362,18 @@ export const registerPersonWithFileEndpoint = async (
     }
 
     // Log all form data entries for debugging
-    console.log('Form data entries for /api/register/file:');
+    console.log('Form data entries for /register/file:');
     for (const pair of formData.entries()) {
       console.log(`${pair[0]}: ${pair[1]}`);
     }
 
-    // Make the API request to the /api/register/file endpoint
-    const response = await axios.post(
-      `${API_URL}/api/register/file`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 60000, // Increase timeout for large files
-      }
-    );
+    // Make the API request to the /register/file endpoint
+    const response = await axios.post(`${API_URL}/register/file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000, // Increase timeout for large files
+    });
 
     return response.data;
   } catch (error) {

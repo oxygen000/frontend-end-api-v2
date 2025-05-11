@@ -1,5 +1,5 @@
 // API configuration
-export const BASE_API_URL = import.meta.env.VITE_API_BASE_URL || 'https://backend-fast-api-ai.fly.dev';
+export const BASE_API_URL = import.meta.env.VITE_API_BASE_URL || 'https://backend-fast-api-ai.fly.dev/api';
 
 // Registration categories
 export const PERSON_CATEGORIES = {
