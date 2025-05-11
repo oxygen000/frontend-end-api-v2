@@ -1,173 +1,259 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Input from '../../components/Input';
-import Textarea from '../../components/Textarea';
 import { Link } from 'react-router-dom';
 import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import Webcam from 'react-webcam';
-import axios from 'axios';
-import { BASE_API_URL, PERSON_CATEGORIES } from '../../config/constants';
-import { handleImageUpload } from '../../utils/apiUtils';
+import { toast } from 'react-hot-toast';
+import SectionButtons from '../../components/SectionButtons';
 
-type FormDataType = {
-  personalInfo: {
-    name: string;
-    nickname?: string;
-    dob: string;
-    nationalId: string;
-    address: string;
-    job: string;
-    documentNumber: string;
-  };
-  contactInfo: {
-    phoneNumber: string;
-    phoneCompany: string;
-    secondPhoneNumber?: string;
-  };
-  criminalRecord: {
-    hasCriminalRecord: boolean;
-    arrest: string;
-    case: string;
-    securityDirectorate: string;
-    policeStation: string;
-    description: string;
-    sentence: string;
-    fame: string;
-    caseDate: string;
-  };
-  vehicleInfo: {
-    hasMotorcycle: boolean;
-    vehicle: string;
-    trafficDepartment: string;
-    licensePlate: string;
-    color: string;
-    licenseExpirationDate: string;
-    manufactureYear: string;
-  };
+interface PersonalInfo {
+  name: string;
+  nickname: string;
+  dob: string;
+  national_id: string;
+  category: string;
+}
+
+interface ContactInfo {
+  phone_number: string;
+  phone_company: string;
+  second_phone_number: string;
+}
+
+interface CriminalRecord {
+  has_criminal_record: boolean;
+  case_details: string;
+  police_station: string;
+  case_number: string;
+  judgment: string;
+  accusation: string;
+}
+
+interface VehicleInfo {
+  has_motorcycle: boolean;
+  license_plate: string;
+  vehicle_model: string;
+  vehicle_color: string;
+  chassis_number: string;
+  vehicle_number: string;
+  license_expiration: string;
+}
+
+interface TravelInfo {
+  travel_date: string;
+  travel_destination: string;
+  arrival_airport: string;
+  arrival_date: string;
+  flight_number: string;
+  return_date: string;
+}
+
+interface FormData {
+  personalInfo: PersonalInfo;
+  contactInfo: ContactInfo;
+  criminalRecord: CriminalRecord;
+  vehicleInfo: VehicleInfo;
+  travelInfo: TravelInfo;
   image: File | null;
   useCamera: boolean;
-};
+  disability_type?: string;
+  disability_description?: string;
+  medical_condition?: string;
+  special_needs?: string;
+  emergency_contact?: string;
+  emergency_phone?: string;
+}
 
-const initialFormData: FormDataType = {
+const initialFormData: FormData = {
   personalInfo: {
     name: '',
     nickname: '',
     dob: '',
-    nationalId: '',
-    address: '',
-    job: '',
-    documentNumber: '',
+    national_id: '',
+    category: '',
   },
   contactInfo: {
-    phoneNumber: '',
-    phoneCompany: '',
+    phone_number: '',
+    phone_company: '',
+    second_phone_number: '',
   },
   criminalRecord: {
-    hasCriminalRecord: false,
-    arrest: '',
-    case: '',
-    securityDirectorate: '',
-    policeStation: '',
-    description: '',
-    sentence: '',
-    fame: '',
-    caseDate: '',
+    has_criminal_record: false,
+    case_details: '',
+    police_station: '',
+    case_number: '',
+    judgment: '',
+    accusation: '',
   },
   vehicleInfo: {
-    hasMotorcycle: false,
-    vehicle: '',
-    trafficDepartment: '',
-    licensePlate: '',
-    color: '',
-    licenseExpirationDate: '',
-    manufactureYear: '',
+    has_motorcycle: false,
+    license_plate: '',
+    vehicle_model: '',
+    vehicle_color: '',
+    chassis_number: '',
+    vehicle_number: '',
+    license_expiration: '',
+  },
+  travelInfo: {
+    travel_date: '',
+    travel_destination: '',
+    arrival_airport: '',
+    arrival_date: '',
+    flight_number: '',
+    return_date: '',
   },
   image: null,
   useCamera: false,
 };
 
-const SectionButtons = ({ 
-  onPrev, 
-  onNext 
-}: { 
-  onPrev?: () => void; 
-  onNext?: () => void; 
-}) => (
-  <div className="flex justify-between mt-6">
-    {onPrev && (
-      <button
-        type="button"
-        onClick={onPrev}
-        className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-      >
-        Previous
-      </button>
-    )}
-    {onNext && (
-      <button
-        type="button"
-        onClick={onNext}
-        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ml-auto"
-      >
-        Next
-      </button>
-    )}
-    
-  </div>
-);
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'https://backend-fast-api-ai.fly.dev';
 
 const AddNormalMan = () => {
   const [currentSection, setCurrentSection] = useState(1);
-  const [formData, setFormData] = useState<FormDataType>(initialFormData);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [, setUploadedImage] = useState<File | null>(null);
+  const [, setUploadedImagePreview] = useState<string | null>(null);
   const webcamRef = useRef<Webcam>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [, setRegisteredUserId] = useState<string | null>(null);
 
-  // Unified validation function
   const validateForm = () => {
     const errors: string[] = [];
-    
+
     // Validate based on current section
     if (currentSection === 1) {
-      if (!formData.personalInfo.name) errors.push("Name is required");
-      if (!formData.personalInfo.dob) errors.push("Date of Birth is required");
-      if (!formData.personalInfo.nationalId) errors.push("National ID is required");
+      // Personal Info validation
+      if (!formData.personalInfo.name.trim()) {
+        errors.push('Name is required');
+      } else if (formData.personalInfo.name.length < 2) {
+        errors.push('Name must be at least 2 characters long');
+      }
+
+      if (!formData.personalInfo.dob) {
+        errors.push('Date of Birth is required');
+      } else {
+        const dob = new Date(formData.personalInfo.dob);
+        const today = new Date();
+        const age = today.getFullYear() - dob.getFullYear();
+        if (age < 18) {
+          errors.push('Must be at least 18 years old');
+        }
+        if (dob > today) {
+          errors.push('Date of Birth cannot be in the future');
+        }
+      }
+
+      if (!formData.personalInfo.national_id.trim()) {
+        errors.push('National ID is required');
+      } else if (!/^\d{10}$/.test(formData.personalInfo.national_id)) {
+        errors.push('National ID must be 10 digits');
+      }
+
+      if (!formData.personalInfo.category.trim()) {
+        errors.push('Category is required');
+      }
     } else if (currentSection === 2) {
-      if (!formData.personalInfo.address) errors.push("Address is required");
-      if (!formData.personalInfo.job) errors.push("Job is required");
+      // Contact Info validation
+      if (!formData.contactInfo.phone_number.trim()) {
+        errors.push('Phone Number is required');
+      } else if (!/^\d{10}$/.test(formData.contactInfo.phone_number)) {
+        errors.push('Phone Number must be 10 digits');
+      }
+
+      if (!formData.contactInfo.phone_company.trim()) {
+        errors.push('Phone Company is required');
+      }
+
+      if (
+        formData.contactInfo.second_phone_number &&
+        !/^\d{10}$/.test(formData.contactInfo.second_phone_number)
+      ) {
+        errors.push('Second Phone Number must be 10 digits');
+      }
     } else if (currentSection === 3) {
-      if (!formData.contactInfo.phoneNumber) errors.push("Phone Number is required");
+      // Criminal record validation
+      if (formData.criminalRecord.has_criminal_record) {
+        if (!formData.criminalRecord.case_details.trim()) {
+          errors.push('Case Details are required when criminal record exists');
+        }
+        if (!formData.criminalRecord.police_station.trim()) {
+          errors.push('Police Station is required when criminal record exists');
+        }
+        if (!formData.criminalRecord.case_number.trim()) {
+          errors.push('Case Number is required when criminal record exists');
+        }
+      }
     } else if (currentSection === 4) {
-      // Vehicle info validation is optional
+      // Vehicle info validation
+      if (formData.vehicleInfo.has_motorcycle) {
+        if (!formData.vehicleInfo.license_plate.trim()) {
+          errors.push('License Plate is required for motorcycle');
+        }
+        if (!formData.vehicleInfo.vehicle_model.trim()) {
+          errors.push('Vehicle Model is required for motorcycle');
+        }
+        if (!formData.vehicleInfo.license_expiration) {
+          errors.push('License Expiration Date is required for motorcycle');
+        } else {
+          const expDate = new Date(formData.vehicleInfo.license_expiration);
+          const today = new Date();
+          if (expDate < today) {
+            errors.push('License has expired');
+          }
+        }
+      }
     } else if (currentSection === 5) {
-      if (!formData.image && !capturedImage) errors.push("Photo is required");
+      // Image validation
+      if (!formData.image && !capturedImage) {
+        errors.push('Photo is required');
+      } else {
+        const imageToCheck = formData.image || capturedImage;
+        if (imageToCheck instanceof File) {
+          if (imageToCheck.size > 5 * 1024 * 1024) {
+            errors.push('Image size should be less than 5MB');
+          }
+          if (
+            !['image/jpeg', 'image/png', 'image/jpg'].includes(
+              imageToCheck.type
+            )
+          ) {
+            errors.push('Please upload a valid image file (JPEG, PNG)');
+          }
+        }
+      }
     }
-    
+
     setFormErrors(errors);
-    
-    // If there are errors, scroll to the error section
+
     if (errors.length > 0) {
       setTimeout(() => {
-        document.querySelector('.bg-red-500\\/20')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const errorElement = document.querySelector('.bg-red-500\\/20');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }, 100);
     }
-    
+
     return errors.length === 0;
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, checked } = e.target as HTMLInputElement;
-    
+
     if (name === 'hasMotorcycle') {
       setFormData((prev) => ({
         ...prev,
         vehicleInfo: {
           ...prev.vehicleInfo,
-          hasMotorcycle: checked,
+          has_motorcycle: checked,
         },
       }));
     } else if (name.includes('.')) {
@@ -190,7 +276,7 @@ const AddNormalMan = () => {
       ...prev,
       criminalRecord: {
         ...prev.criminalRecord,
-        hasCriminalRecord: !prev.criminalRecord.hasCriminalRecord,
+        has_criminal_record: !prev.criminalRecord.has_criminal_record,
       },
     }));
   };
@@ -201,7 +287,9 @@ const AddNormalMan = () => {
       setCurrentSection(currentSection + 1);
       // Scroll to top of form when changing sections
       setTimeout(() => {
-        document.querySelector('form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document
+          .querySelector('form')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
   };
@@ -211,408 +299,259 @@ const AddNormalMan = () => {
     setCurrentSection(currentSection - 1);
     // Scroll to top of form when changing sections
     setTimeout(() => {
-      document.querySelector('form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .querySelector('form')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
 
-  // Unified form submission function
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  // Handle file upload
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setIsSubmitting(true);
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setFormErrors(['Image size should be less than 5MB']);
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setFormErrors(['Please upload a valid image file']);
+      return;
+    }
 
     try {
-      // Create a FormData object directly
-      const directFormData = new FormData();
-      
-      // Add the file
-      if (formData.image) {
-        directFormData.append('file', formData.image);
-      }
-      
-      // Add personal info
-      directFormData.append('name', formData.personalInfo.name || '');
-      // IMPORTANT: Force a non-empty value for nickname to satisfy the backend requirement
-      directFormData.append('nickname', formData.personalInfo.nickname || 'unnamed'); 
-      directFormData.append('dob', formData.personalInfo.dob || '');
-      directFormData.append('national_id', formData.personalInfo.nationalId || '');
-      directFormData.append('address', formData.personalInfo.address || '');
-      directFormData.append('job', formData.personalInfo.job || '');
-      directFormData.append('document_number', formData.personalInfo.documentNumber || '');
-      
-      // Add contact info
-      directFormData.append('phone_number', formData.contactInfo.phoneNumber || '');
-      directFormData.append('phone_company', formData.contactInfo.phoneCompany || '');
-      directFormData.append('second_phone_number', formData.contactInfo.secondPhoneNumber || '');
-      
-      // Add criminal record
-      directFormData.append('has_criminal_record', formData.criminalRecord.hasCriminalRecord ? '1' : '0');
-      directFormData.append('arrest', formData.criminalRecord.arrest || '');
-      directFormData.append('case_details', formData.criminalRecord.case || '');
-      directFormData.append('security_directorate', formData.criminalRecord.securityDirectorate || '');
-      directFormData.append('police_station', formData.criminalRecord.policeStation || '');
-      directFormData.append('description', formData.criminalRecord.description || '');
-      directFormData.append('sentence', formData.criminalRecord.sentence || '');
-      directFormData.append('fame', formData.criminalRecord.fame || '');
-      directFormData.append('case_date', formData.criminalRecord.caseDate || '');
-      
-      // Add vehicle info
-      directFormData.append('has_motorcycle', formData.vehicleInfo.hasMotorcycle ? '1' : '0');
-      directFormData.append('vehicle', formData.vehicleInfo.vehicle || '');
-      directFormData.append('traffic_department', formData.vehicleInfo.trafficDepartment || '');
-      directFormData.append('license_plate', formData.vehicleInfo.licensePlate || '');
-      directFormData.append('color', formData.vehicleInfo.color || '');
-      directFormData.append('license_expiration_date', formData.vehicleInfo.licenseExpirationDate || '');
-      directFormData.append('manufacture_year', formData.vehicleInfo.manufactureYear || '');
-      
-      // Add processing options
-      directFormData.append('bypass_angle_check', '0');
-      directFormData.append('train_multiple', '1');
-      directFormData.append('category', PERSON_CATEGORIES.MAN);
-      
-      // Log data being sent
-      console.log('Submitting direct form data');
-      console.log('Image file:', formData.image);
-      console.log('Captured image exists:', !!capturedImage);
-      
-      // Try direct submission with a completely new approach
-      if (formData.image && !capturedImage) {
-        try {
-          console.log('Trying completely new direct approach');
-          
-          // Log all form data entries for debugging
-          console.log('Direct form data entries:');
-          for (const pair of directFormData.entries()) {
-            console.log(`${pair[0]}: ${pair[1]}`);
-          }
-          
-          // Try a completely different approach - convert file to base64 and use the base64 endpoint
-          const fileReader = new FileReader();
-          fileReader.readAsDataURL(formData.image);
-          
-          fileReader.onload = async () => {
-            try {
-              const base64Image = fileReader.result?.toString().split(',')[1];
-              
-              if (!base64Image) {
-                throw new Error('Failed to convert image to base64');
-              }
-              
-              // Create a JSON payload with all the form data
-              const jsonPayload = {
-                name: formData.personalInfo.name || '',
-                nickname: formData.personalInfo.nickname || 'unnamed', // Force a non-empty value
-                dob: formData.personalInfo.dob || '',
-                national_id: formData.personalInfo.nationalId || '',
-                address: formData.personalInfo.address || '',
-                job: formData.personalInfo.job || '',
-                document_number: formData.personalInfo.documentNumber || '',
-                
-                // Contact info
-                phone_number: formData.contactInfo.phoneNumber || '',
-                phone_company: formData.contactInfo.phoneCompany || '',
-                second_phone_number: formData.contactInfo.secondPhoneNumber || '',
-                
-                // Criminal record
-                has_criminal_record: formData.criminalRecord.hasCriminalRecord ? '1' : '0',
-                arrest: formData.criminalRecord.arrest || '',
-                case_details: formData.criminalRecord.case || '',
-                security_directorate: formData.criminalRecord.securityDirectorate || '',
-                police_station: formData.criminalRecord.policeStation || '',
-                description: formData.criminalRecord.description || '',
-                sentence: formData.criminalRecord.sentence || '',
-                fame: formData.criminalRecord.fame || '',
-                case_date: formData.criminalRecord.caseDate || '',
-                
-                // Vehicle info
-                has_motorcycle: formData.vehicleInfo.hasMotorcycle ? '1' : '0',
-                vehicle: formData.vehicleInfo.vehicle || '',
-                traffic_department: formData.vehicleInfo.trafficDepartment || '',
-                license_plate: formData.vehicleInfo.licensePlate || '',
-                color: formData.vehicleInfo.color || '',
-                license_expiration_date: formData.vehicleInfo.licenseExpirationDate || '',
-                manufacture_year: formData.vehicleInfo.manufactureYear || '',
-                
-                // Image data
-                image_base64: base64Image,
-                
-                // Category and processing options
-                category: PERSON_CATEGORIES.MAN,
-                bypass_angle_check: '0',
-                train_multiple: '1'
-              };
-              
-              console.log('Sending JSON payload with base64 image');
-              
-              // Make the API request to the /api/register endpoint with JSON
-              const response = await axios.post(
-                `${BASE_API_URL}/api/register`,
-                jsonPayload,
-                {
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  timeout: 60000
-                }
-              );
-              
-              console.log('Registration successful:', response.data);
-              
-              // Show success message and store the user ID from response
-              setSubmitSuccess(true);
-              if (response.data && response.data.user_id) {
-                setRegisteredUserId(response.data.user_id);
-              }
-              
-              // Reset form after delay
-              setTimeout(() => {
-                setFormData(initialFormData);
-                setCapturedImage(null);
-                setCurrentSection(1);
-                setFormErrors([]);
-                setSubmitSuccess(false);
-                setIsSubmitting(false);
-              }, 5000);
-            } catch (error) {
-              console.error('Base64 approach failed:', error);
-              setIsSubmitting(false);
-              
-              // Handle API errors
-              if (axios.isAxiosError(error)) {
-                if (error.response) {
-                  // Server responded with an error
-                  const errorMessage = error.response.data?.message || 
-                                      error.response.data?.error || 
-                                      `Server error: ${error.response.status}`;
-                  console.error('Server response:', error.response.data);
-                  setFormErrors([errorMessage]);
-                } else if (error.request) {
-                  // No response received
-                  console.error('No response received:', error.request);
-                  setFormErrors(['No response from server. Please check your internet connection.']);
-                } else {
-                  // Request setup error
-                  console.error('Request setup error:', error.message);
-                  setFormErrors(['Error setting up request. Please try again.']);
-                }
-              } else {
-                // Non-Axios error
-                setFormErrors([(error as Error).message || 'An unknown error occurred']);
-              }
-            }
-          };
-          
-          fileReader.onerror = () => {
-            console.error('Error reading file');
-            setIsSubmitting(false);
-            setFormErrors(['Error reading file. Please try again with a different image.']);
-          };
-          
-          return; // Exit early since we're handling the submission in the FileReader callback
-        } catch (error) {
-          console.error('Direct form submission failed:', error);
-          // Continue to try other methods
-        }
-      }
-      
-      // If we have a captured image from webcam, use base64 approach
-      if (capturedImage) {
-        try {
-          console.log('Using captured image with base64 approach');
-          
-          // Create a JSON payload with all the form data
-          const jsonPayload = {
-            name: formData.personalInfo.name || '',
-            nickname: formData.personalInfo.nickname || 'unnamed', // Force a non-empty value
-            dob: formData.personalInfo.dob || '',
-            national_id: formData.personalInfo.nationalId || '',
-            address: formData.personalInfo.address || '',
-            job: formData.personalInfo.job || '',
-            document_number: formData.personalInfo.documentNumber || '',
-            
-            // Contact info
-            phone_number: formData.contactInfo.phoneNumber || '',
-            phone_company: formData.contactInfo.phoneCompany || '',
-            second_phone_number: formData.contactInfo.secondPhoneNumber || '',
-            
-            // Criminal record
-            has_criminal_record: formData.criminalRecord.hasCriminalRecord ? '1' : '0',
-            arrest: formData.criminalRecord.arrest || '',
-            case_details: formData.criminalRecord.case || '',
-            security_directorate: formData.criminalRecord.securityDirectorate || '',
-            police_station: formData.criminalRecord.policeStation || '',
-            description: formData.criminalRecord.description || '',
-            sentence: formData.criminalRecord.sentence || '',
-            fame: formData.criminalRecord.fame || '',
-            case_date: formData.criminalRecord.caseDate || '',
-            
-            // Vehicle info
-            has_motorcycle: formData.vehicleInfo.hasMotorcycle ? '1' : '0',
-            vehicle: formData.vehicleInfo.vehicle || '',
-            traffic_department: formData.vehicleInfo.trafficDepartment || '',
-            license_plate: formData.vehicleInfo.licensePlate || '',
-            color: formData.vehicleInfo.color || '',
-            license_expiration_date: formData.vehicleInfo.licenseExpirationDate || '',
-            manufacture_year: formData.vehicleInfo.manufactureYear || '',
-            
-            // Image data - strip data URI prefix if present
-            image_base64: capturedImage.startsWith('data:image') ? capturedImage.split(',')[1] : capturedImage,
-            
-            // Category and processing options
-            category: PERSON_CATEGORIES.MAN,
-            bypass_angle_check: '0',
-            train_multiple: '1'
-          };
-          
-          console.log('Sending JSON payload with captured image');
-          
-          // Make the API request to the /api/register endpoint with JSON
-          const response = await axios.post(
-            `${BASE_API_URL}/api/register`,
-            jsonPayload,
-            {
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              timeout: 60000
-            }
-          );
-          
-          console.log('Registration successful:', response.data);
-          
-          // Show success message and store the user ID from response
-          setSubmitSuccess(true);
-          if (response.data && response.data.user_id) {
-            setRegisteredUserId(response.data.user_id);
-          }
-          
-          // Reset form after delay
-          setTimeout(() => {
-            setFormData(initialFormData);
-            setCapturedImage(null);
-            setCurrentSection(1);
-            setFormErrors([]);
-            setSubmitSuccess(false);
-            setIsSubmitting(false);
-          }, 5000);
-          
-          return; // Exit early since we've handled the submission
-        } catch (error) {
-          console.error('Captured image approach failed:', error);
-          // Continue to try other methods
-        }
-      }
-      
-      // If all direct approaches failed, try the standard method with a non-empty nickname
-      const submitData = {
-        // Personal info
-        name: formData.personalInfo.name,
-        nickname: formData.personalInfo.nickname || 'unnamed', // Force a non-empty value
-        dob: formData.personalInfo.dob,
-        national_id: formData.personalInfo.nationalId,
-        address: formData.personalInfo.address,
-        job: formData.personalInfo.job,
-        document_number: formData.personalInfo.documentNumber,
-        
-        // Contact info
-        phone_number: formData.contactInfo.phoneNumber,
-        phone_company: formData.contactInfo.phoneCompany,
-        second_phone_number: formData.contactInfo.secondPhoneNumber || '',
-        
-        // Criminal record
-        has_criminal_record: formData.criminalRecord.hasCriminalRecord ? '1' : '0',
-        arrest: formData.criminalRecord.arrest || '',
-        case_details: formData.criminalRecord.case || '',
-        security_directorate: formData.criminalRecord.securityDirectorate || '',
-        police_station: formData.criminalRecord.policeStation || '',
-        description: formData.criminalRecord.description || '',
-        sentence: formData.criminalRecord.sentence || '',
-        fame: formData.criminalRecord.fame || '',
-        case_date: formData.criminalRecord.caseDate || '',
-        
-        // Vehicle info
-        has_motorcycle: formData.vehicleInfo.hasMotorcycle ? '1' : '0',
-        vehicle: formData.vehicleInfo.vehicle || '',
-        traffic_department: formData.vehicleInfo.trafficDepartment || '',
-        license_plate: formData.vehicleInfo.licensePlate || '',
-        color: formData.vehicleInfo.color || '',
-        license_expiration_date: formData.vehicleInfo.licenseExpirationDate || '',
-        manufacture_year: formData.vehicleInfo.manufactureYear || '',
-        
-        // Processing options
-        bypass_angle_check: '0',
-        train_multiple: '1'
-      };
-      
-      // Submit to API using standard method
-      const response = await handleImageUpload(
-        formData.image, 
-        capturedImage, 
-        { 
-          ...submitData, 
-          has_criminal_record: formData.criminalRecord.hasCriminalRecord ? 1 : 0,
-          has_motorcycle: formData.vehicleInfo.hasMotorcycle ? 1 : 0,
-          category: PERSON_CATEGORIES.MAN 
-        },
-        PERSON_CATEGORIES.MAN
-      );
-      
-      console.log('Registration successful:', response);
-      
-      // Show success message and store the user ID from response
-      setSubmitSuccess(true);
-      if (response && response.user_id) {
-        setRegisteredUserId(response.user_id);
-      }
-      
-      // Reset form after delay
-      setTimeout(() => {
-        setFormData(initialFormData);
-        setCapturedImage(null);
-        setCurrentSection(1);
-        setFormErrors([]);
-        setSubmitSuccess(false);
-        setIsSubmitting(false);
-      }, 5000);
-      
+      // Create a preview without modifying the image
+      const previewUrl = URL.createObjectURL(file);
+      setUploadedImage(file);
+      setUploadedImagePreview(previewUrl);
+      setFormData((prev) => ({
+        ...prev,
+        image: file,
+      }));
     } catch (error) {
-      console.error('Error registering man:', error);
-      
-      // Handle API errors
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          // Server responded with an error
-          const errorMessage = error.response.data?.message || 
-                              error.response.data?.error || 
-                              `Server error: ${error.response.status}`;
-          console.error('Server response:', error.response.data);
-          setFormErrors([errorMessage]);
-        } else if (error.request) {
-          // No response received
-          console.error('No response received:', error.request);
-          setFormErrors(['No response from server. Please check your internet connection.']);
-        } else {
-          // Request setup error
-          console.error('Request setup error:', error.message);
-          setFormErrors(['Error setting up request. Please try again.']);
-        }
-      } else {
-        // Non-Axios error
-        setFormErrors([(error as Error).message || 'An unknown error occurred']);
-      }
-    } finally {
-      setIsSubmitting(false);
+      console.error('Image processing error:', error);
+      setFormErrors([
+        error instanceof Error ? error.message : 'Failed to process image',
+      ]);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to process image'
+      );
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files ? e.target.files[0] : null;
-    if (file) {
-      setFormData((prevData) => ({
-        ...prevData,
-        image: file,
-      }));
+  // Capture image from webcam without modification
+  const captureImage = () => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc) {
+        setCapturedImage(imageSrc);
+        setUploadedImage(null);
+        setUploadedImagePreview(null);
+      }
+    }
+  };
+
+  // Enhanced form submission with better error handling
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Create FormData for the registration
+      const formDataToSend = new FormData();
+
+      // Add image data
+      if (formData.image) {
+        formDataToSend.append('file', formData.image);
+      } else if (capturedImage) {
+        const response = await fetch(capturedImage);
+        const blob = await response.blob();
+        formDataToSend.append('file', blob, 'captured.jpg');
+      } else {
+        throw new Error('No image provided');
+      }
+
+      // Add required fields
+      formDataToSend.append('name', formData.personalInfo.name);
+      formDataToSend.append('form_type', 'adult');
+
+      // Add contact info
+      formDataToSend.append('phone_number', formData.contactInfo.phone_number);
+      formDataToSend.append(
+        'phone_company',
+        formData.contactInfo.phone_company
+      );
+      if (formData.contactInfo.second_phone_number) {
+        formDataToSend.append(
+          'second_phone_number',
+          formData.contactInfo.second_phone_number
+        );
+      }
+
+      // Add vehicle info
+      if (formData.vehicleInfo.vehicle_model) {
+        formDataToSend.append(
+          'vehicle_model',
+          formData.vehicleInfo.vehicle_model
+        );
+      }
+      if (formData.vehicleInfo.vehicle_number) {
+        formDataToSend.append(
+          'vehicle_number',
+          formData.vehicleInfo.vehicle_number
+        );
+      }
+      if (formData.vehicleInfo.license_plate) {
+        formDataToSend.append(
+          'license_plate',
+          formData.vehicleInfo.license_plate
+        );
+      }
+      if (formData.vehicleInfo.vehicle_color) {
+        formDataToSend.append(
+          'vehicle_color',
+          formData.vehicleInfo.vehicle_color
+        );
+      }
+      if (formData.vehicleInfo.license_expiration) {
+        formDataToSend.append(
+          'license_expiration',
+          formData.vehicleInfo.license_expiration
+        );
+      }
+      if (formData.vehicleInfo.chassis_number) {
+        formDataToSend.append(
+          'chassis_number',
+          formData.vehicleInfo.chassis_number
+        );
+      }
+
+      // Add criminal record info
+      formDataToSend.append(
+        'has_criminal_record',
+        formData.criminalRecord.has_criminal_record.toString()
+      );
+      if (formData.criminalRecord.has_criminal_record) {
+        if (formData.criminalRecord.case_details) {
+          formDataToSend.append(
+            'case_details',
+            formData.criminalRecord.case_details
+          );
+        }
+        if (formData.criminalRecord.police_station) {
+          formDataToSend.append(
+            'police_station',
+            formData.criminalRecord.police_station
+          );
+        }
+        if (formData.criminalRecord.case_number) {
+          formDataToSend.append(
+            'case_number',
+            formData.criminalRecord.case_number
+          );
+        }
+        if (formData.criminalRecord.judgment) {
+          formDataToSend.append('judgment', formData.criminalRecord.judgment);
+        }
+        if (formData.criminalRecord.accusation) {
+          formDataToSend.append(
+            'accusation',
+            formData.criminalRecord.accusation
+          );
+        }
+      }
+
+      // Add travel info
+      if (formData.travelInfo.travel_date) {
+        formDataToSend.append('travel_date', formData.travelInfo.travel_date);
+      }
+      if (formData.travelInfo.travel_destination) {
+        formDataToSend.append(
+          'travel_destination',
+          formData.travelInfo.travel_destination
+        );
+      }
+      if (formData.travelInfo.arrival_airport) {
+        formDataToSend.append(
+          'arrival_airport',
+          formData.travelInfo.arrival_airport
+        );
+      }
+      if (formData.travelInfo.arrival_date) {
+        formDataToSend.append('arrival_date', formData.travelInfo.arrival_date);
+      }
+      if (formData.travelInfo.flight_number) {
+        formDataToSend.append(
+          'flight_number',
+          formData.travelInfo.flight_number
+        );
+      }
+      if (formData.travelInfo.return_date) {
+        formDataToSend.append('return_date', formData.travelInfo.return_date);
+      }
+
+      // Log the request URL and form data for debugging
+      console.log('Sending request to:', `${API_BASE_URL}/api/register/upload`);
+      console.log('Form data entries:');
+      for (const pair of formDataToSend.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
+      // Send registration request
+      const response = await fetch(`${API_BASE_URL}/api/register/upload`, {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      // Log the response status and headers for debugging
+      console.log('Response status:', response.status);
+      console.log(
+        'Response headers:',
+        Object.fromEntries(response.headers.entries())
+      );
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || `Registration failed with status ${response.status}`
+        );
+      }
+
+      if (data.status === 'success') {
+        setSubmitSuccess(true);
+        toast.success('Registration successful!');
+
+        // Reset form data and state
+        setFormData(initialFormData);
+        setCapturedImage(null);
+        setUploadedImage(null);
+        setUploadedImagePreview(null);
+        setCurrentSection(1);
+        setFormErrors([]);
+
+        // Reset success state after 2 seconds
+        setTimeout(() => {
+          setSubmitSuccess(false);
+        }, 2000);
+      } else {
+        throw new Error(data.message || 'Registration failed');
+      }
+    } catch (err) {
+      console.error('Registration error:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred during registration';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -625,21 +564,16 @@ const AddNormalMan = () => {
     setCapturedImage(null);
   };
 
-  const captureImage = () => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      setCapturedImage(imageSrc);
-    }
-  };
-
   const retakePhoto = () => {
     setCapturedImage(null);
   };
 
   return (
     <div className="p-6">
-      <Link to="/home"
-       className="inline-flex items-center text-white hover:text-blue-300 transition-colors">
+      <Link
+        to="/home"
+        className="inline-flex items-center text-white hover:text-blue-300 transition-colors"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-5 w-5 mr-2"
@@ -662,7 +596,9 @@ const AddNormalMan = () => {
             <React.Fragment key={step}>
               {idx > 0 && (
                 <div className="w-16 h-1 bg-gray-300">
-                  <div className={`h-full ${currentSection >= step ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                  <div
+                    className={`h-full ${currentSection >= step ? 'bg-blue-600' : 'bg-gray-300'}`}
+                  ></div>
                 </div>
               )}
               <div
@@ -670,8 +606,8 @@ const AddNormalMan = () => {
                   currentSection === step
                     ? 'bg-blue-600 text-white scale-110'
                     : currentSection > step
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700'
                 }`}
               >
                 {step}
@@ -688,14 +624,18 @@ const AddNormalMan = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="text-2xl font-bold text-center mb-6">Male Registration</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">
+          Male Registration
+        </h2>
 
         {/* Display form errors */}
         {formErrors.length > 0 && (
           <div className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4">
             <ul className="list-disc pl-5">
               {formErrors.map((error, index) => (
-                <li key={index} className="text-red-200">{error}</li>
+                <li key={index} className="text-red-200">
+                  {error}
+                </li>
               ))}
             </ul>
           </div>
@@ -704,128 +644,225 @@ const AddNormalMan = () => {
         {/* Success message */}
         {submitSuccess && (
           <motion.div
-            className="bg-green-500/20 p-4 rounded-lg border border-green-500/30 text-center mb-4"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
-            <p className="text-green-200 font-semibold">Registration successful!</p>
+            <motion.div
+              className="bg-white/20 backdrop-blur-lg p-8 rounded-2xl border border-white/30 text-center max-w-md mx-4"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <motion.div
+                className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </motion.div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Registration Successful!
+              </h3>
+              <p className="text-white/80 mb-6">
+                Redirecting to user profile...
+              </p>
+              <div className="w-full bg-white/20 rounded-full h-2">
+                <motion.div
+                  className="bg-green-500 h-2 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 2, ease: 'linear' }}
+                />
+              </div>
+            </motion.div>
           </motion.div>
         )}
 
         {/* Sections */}
         {currentSection === 1 && (
-          <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
-            <Input label="Name" name="personalInfo.name" value={formData.personalInfo.name} onChange={handleInputChange} />
-            <Input label="Nickname" name="personalInfo.nickname" value={formData.personalInfo.nickname || ''} onChange={handleInputChange} />
-            <Input label="Date of Birth" name="personalInfo.dob" type="date" value={formData.personalInfo.dob} onChange={handleInputChange} />
+          <motion.div
+            initial={{ x: -30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="space-y-4"
+          >
+            <Input
+              label="Name"
+              name="personalInfo.name"
+              value={formData.personalInfo.name}
+              onChange={handleInputChange}
+            />
+            <Input
+              label="Nickname"
+              name="personalInfo.nickname"
+              value={formData.personalInfo.nickname || ''}
+              onChange={handleInputChange}
+            />
+            <Input
+              label="Date of Birth"
+              name="personalInfo.dob"
+              type="date"
+              value={formData.personalInfo.dob}
+              onChange={handleInputChange}
+            />
 
-            <Input label="National ID" name="personalInfo.nationalId" value={formData.personalInfo.nationalId} onChange={handleInputChange} />
-            <Input label="Address" name="personalInfo.address" value={formData.personalInfo.address} onChange={handleInputChange} />
-            <Input label="Job" name="personalInfo.job" value={formData.personalInfo.job} onChange={handleInputChange} />
-            <Input label="Document Number" name="personalInfo.documentNumber" value={formData.personalInfo.documentNumber} onChange={handleInputChange} />
+            <Input
+              label="National ID"
+              name="personalInfo.national_id"
+              value={formData.personalInfo.national_id}
+              onChange={handleInputChange}
+            />
+            <Input
+              label="Category"
+              name="personalInfo.category"
+              value={formData.personalInfo.category}
+              onChange={handleInputChange}
+            />
             <SectionButtons onNext={nextSection} />
-              
           </motion.div>
         )}
 
         {currentSection === 2 && (
-          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
-            <Input label="Phone Number" name="contactInfo.phoneNumber" value={formData.contactInfo.phoneNumber} onChange={handleInputChange} />
-            <Input label="Phone Company" name="contactInfo.phoneCompany" value={formData.contactInfo.phoneCompany} onChange={handleInputChange} />
-            <Input 
-              label="Second Phone Number (Optional)" 
-              name="contactInfo.secondPhoneNumber" 
-              value={formData.contactInfo.secondPhoneNumber || ''} 
-              onChange={handleInputChange} 
+          <motion.div
+            initial={{ x: 30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="space-y-4"
+          >
+            <Input
+              label="Phone Number"
+              name="contactInfo.phone_number"
+              value={formData.contactInfo.phone_number}
+              onChange={handleInputChange}
+            />
+            <Input
+              label="Phone Company"
+              name="contactInfo.phone_company"
+              value={formData.contactInfo.phone_company}
+              onChange={handleInputChange}
+            />
+            <Input
+              label="Second Phone Number (Optional)"
+              name="contactInfo.second_phone_number"
+              value={formData.contactInfo.second_phone_number || ''}
+              onChange={handleInputChange}
             />
             <SectionButtons onPrev={prevSection} onNext={nextSection} />
-             
           </motion.div>
         )}
 
         {currentSection === 3 && (
-          <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="space-y-4">
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="space-y-4"
+          >
             <div className="flex items-center space-x-4">
               <input
                 type="checkbox"
-                checked={formData.criminalRecord.hasCriminalRecord}
+                checked={formData.criminalRecord.has_criminal_record}
                 onChange={handleToggleCriminalRecord}
                 className="h-5 w-5"
               />
               <label>Has Criminal Record</label>
             </div>
-            {formData.criminalRecord.hasCriminalRecord && (
+            {formData.criminalRecord.has_criminal_record && (
               <>
-                <Input label="Arrest" name="criminalRecord.arrest" value={formData.criminalRecord.arrest} onChange={handleInputChange} />
-                <Input label="Case" name="criminalRecord.case" value={formData.criminalRecord.case} onChange={handleInputChange} />
-                <Input 
-                  label="Security Directorate" 
-                  name="criminalRecord.securityDirectorate" 
-                  value={formData.criminalRecord.securityDirectorate} 
-                  onChange={handleInputChange} 
+                <Input
+                  label="Case Details"
+                  name="criminalRecord.case_details"
+                  value={formData.criminalRecord.case_details}
+                  onChange={handleInputChange}
                 />
-                <Input 
-                  label="Police Station" 
-                  name="criminalRecord.policeStation" 
-                  value={formData.criminalRecord.policeStation} 
-                  onChange={handleInputChange} 
+                <Input
+                  label="Police Station"
+                  name="criminalRecord.police_station"
+                  value={formData.criminalRecord.police_station}
+                  onChange={handleInputChange}
                 />
-                <Textarea 
-                  label="Description" 
-                  name="criminalRecord.description" 
-                  value={formData.criminalRecord.description} 
-                  onChange={handleInputChange} 
+                <Input
+                  label="Case Number"
+                  name="criminalRecord.case_number"
+                  value={formData.criminalRecord.case_number}
+                  onChange={handleInputChange}
                 />
-                <Input label="Sentence" name="criminalRecord.sentence" value={formData.criminalRecord.sentence} onChange={handleInputChange} />
-                <Input label="Fame" name="criminalRecord.fame" value={formData.criminalRecord.fame} onChange={handleInputChange} />
-                <Input 
-                  label="Case Date" 
-                  type="date" 
-                  name="criminalRecord.caseDate" 
-                  value={formData.criminalRecord.caseDate} 
-                  onChange={handleInputChange} 
+                <Input
+                  label="Judgment"
+                  name="criminalRecord.judgment"
+                  value={formData.criminalRecord.judgment}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Accusation"
+                  name="criminalRecord.accusation"
+                  value={formData.criminalRecord.accusation}
+                  onChange={handleInputChange}
                 />
               </>
             )}
             <SectionButtons onPrev={prevSection} onNext={nextSection} />
-              
           </motion.div>
         )}
 
         {currentSection === 4 && (
-          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4 ">
-            
-            <Input label="Vehicle" name="vehicleInfo.vehicle" value={formData.vehicleInfo.vehicle} onChange={handleInputChange} />
-            <Input 
-              label="Traffic Department" 
-              name="vehicleInfo.trafficDepartment" 
-              value={formData.vehicleInfo.trafficDepartment} 
-              onChange={handleInputChange} 
+          <motion.div
+            initial={{ x: 30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="space-y-4 "
+          >
+            <Input
+              label="Vehicle"
+              name="vehicleInfo.vehicle_model"
+              value={formData.vehicleInfo.vehicle_model}
+              onChange={handleInputChange}
             />
-            <Input 
-              label="License Plate" 
-              name="vehicleInfo.licensePlate" 
-              value={formData.vehicleInfo.licensePlate} 
-              onChange={handleInputChange} 
+            <Input
+              label="Traffic Department"
+              name="vehicleInfo.vehicle_number"
+              value={formData.vehicleInfo.vehicle_number}
+              onChange={handleInputChange}
             />
-            <Input label="Color" name="vehicleInfo.color" value={formData.vehicleInfo.color} onChange={handleInputChange} />
-            <Input 
-              label="License Expiration Date" 
-              type="date" 
-              name="vehicleInfo.licenseExpirationDate" 
-              value={formData.vehicleInfo.licenseExpirationDate} 
-              onChange={handleInputChange} 
+            <Input
+              label="License Plate"
+              name="vehicleInfo.license_plate"
+              value={formData.vehicleInfo.license_plate}
+              onChange={handleInputChange}
             />
-            <Input 
-              label="Manufacture Year" 
-              name="vehicleInfo.manufactureYear" 
-              value={formData.vehicleInfo.manufactureYear} 
-              onChange={handleInputChange} 
+            <Input
+              label="Color"
+              name="vehicleInfo.vehicle_color"
+              value={formData.vehicleInfo.vehicle_color}
+              onChange={handleInputChange}
             />
-            
+            <Input
+              label="License Expiration Date"
+              type="date"
+              name="vehicleInfo.license_expiration"
+              value={formData.vehicleInfo.license_expiration}
+              onChange={handleInputChange}
+            />
+            <Input
+              label="Manufacture Year"
+              name="vehicleInfo.chassis_number"
+              value={formData.vehicleInfo.chassis_number}
+              onChange={handleInputChange}
+            />
+
             <SectionButtons onPrev={prevSection} onNext={nextSection} />
           </motion.div>
-          
         )}
 
         {currentSection === 5 && (
@@ -855,8 +892,10 @@ const AddNormalMan = () => {
             {/* Upload image option */}
             {!formData.useCamera ? (
               <div className="flex flex-col items-center">
-                <label className="block text-white font-semibold mb-2">Upload Image</label>
-                <div 
+                <label className="block text-white font-semibold mb-2">
+                  Upload Image
+                </label>
+                <div
                   className="cursor-pointer"
                   onClick={() => document.getElementById('fileInput')?.click()}
                 >
@@ -867,6 +906,7 @@ const AddNormalMan = () => {
                   type="file"
                   name="image"
                   onChange={handleFileChange}
+                  accept="image/jpeg,image/png"
                   className="hidden"
                 />
               </div>
@@ -883,12 +923,21 @@ const AddNormalMan = () => {
                         videoConstraints={{
                           width: 480,
                           height: 480,
-                          facingMode: "user"
+                          facingMode: 'user',
                         }}
                         className="w-full"
                       />
-                      <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <div className="absolute inset-0 pointer-events-none">
+                        {/* Face alignment guide */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-64 h-64 border-2 border-blue-400 rounded-full opacity-50"></div>
+                        </div>
+                        <svg
+                          width="100%"
+                          height="100%"
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                        >
                           <path
                             d="M20,20 L20,30 L30,30 M70,30 L80,30 L80,20 M80,80 L80,70 L70,70 M30,70 L20,70 L20,80"
                             stroke="#3b82f6"
@@ -898,9 +947,23 @@ const AddNormalMan = () => {
                         </svg>
                       </div>
                     </div>
+                    <div className="mt-4 text-center text-white/80 text-sm">
+                      <p className="mb-2 font-semibold">
+                        Tips for a good photo:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Position your face within the circle</li>
+                        <li>Look directly at the camera</li>
+                        <li>Keep your head level and centered</li>
+                        <li>Ensure good lighting on your face</li>
+                        <li>Remove any face coverings</li>
+                        <li>Make sure your entire face is visible</li>
+                        <li>Keep a neutral expression</li>
+                      </ul>
+                    </div>
                     <button
                       type="button"
-                      className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                      className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto"
                       onClick={captureImage}
                     >
                       <FaCamera className="mr-2" /> Capture Photo
@@ -909,9 +972,9 @@ const AddNormalMan = () => {
                 ) : (
                   <>
                     <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-green-400">
-                      <img 
-                        src={capturedImage} 
-                        alt="Captured" 
+                      <img
+                        src={capturedImage}
+                        alt="Captured"
                         className="w-full"
                       />
                       <div className="absolute top-2 right-2">
@@ -947,10 +1010,8 @@ const AddNormalMan = () => {
               </div>
             )}
 
-            <SectionButtons 
-              onPrev={prevSection} 
-            />
-            
+            <SectionButtons onPrev={prevSection} />
+
             {/* Submit Button */}
             <div className="mt-8 flex flex-col items-center">
               {submitSuccess ? (
@@ -959,69 +1020,112 @@ const AddNormalMan = () => {
                   animate={{ scale: 1 }}
                   className="flex flex-col items-center"
                 >
-                  <div className="bg-blue-500 text-white p-4 rounded-full mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <div className="bg-green-500 text-white p-4 rounded-full mb-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-8 w-8"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
-                  <p className="text-white font-medium">Registration Submitted Successfully!</p>
+                  <p className="text-white font-medium">
+                    Registration Submitted Successfully!
+                  </p>
+                  <Link
+                    to="/home"
+                    className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Return to Home
+                  </Link>
                 </motion.div>
               ) : (
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  onClick={handleFormSubmit}
+                  disabled={loading}
                   className={`
                     px-8 py-3 rounded-lg font-semibold
                     flex items-center justify-center
                     transition-all duration-300
-                    ${isSubmitting 
-                      ? 'bg-blue-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-blue-500/30'}
+                    ${
+                      loading
+                        ? 'bg-blue-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-blue-500/30'
+                    }
                     text-white min-w-[200px]
                     relative overflow-hidden
                   `}
                 >
-                  {isSubmitting && (
-                    <motion.div 
+                  {loading && (
+                    <motion.div
                       className="absolute inset-0 bg-blue-500 opacity-30"
                       initial={{ width: 0 }}
-                      animate={{ width: "100%" }}
+                      animate={{ width: '100%' }}
                       transition={{ duration: 1.5 }}
                     />
                   )}
-                  
-                  {isSubmitting ? (
+
+                  {loading ? (
                     <div className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Processing...
                     </div>
                   ) : (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       Submit Registration
                     </>
                   )}
                 </button>
               )}
-              
-              
             </div>
           </motion.div>
         )}
 
         {/* Error Messages */}
-        {formErrors.length > 0 && (
-          <ul className="text-red-500 space-y-1 list-disc list-inside">
-            {formErrors.map((err, idx) => (
-              <li key={idx}>{err}</li>
-            ))}
-          </ul>
+        {error && (
+          <div className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4">
+            <p className="text-red-200">{error}</p>
+          </div>
         )}
       </motion.form>
     </div>

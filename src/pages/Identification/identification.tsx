@@ -5,7 +5,10 @@ import { motion } from 'framer-motion';
 import { FaCamera, FaRedo, FaUpload } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
-import { recognizeFace, recognizeFaceBase64 } from '../../utils/apiUtils';
+
+// API base URL from environment variable
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'https://backend-fast-api-ai.fly.dev';
 
 function Identification() {
   const navigate = useNavigate();
@@ -20,6 +23,11 @@ function Identification() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [recognitionSuccess, setRecognitionSuccess] = useState(false);
+  const [recognizedUser, setRecognizedUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const webcamRef = useRef<Webcam>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,13 +36,52 @@ function Identification() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setUploadedImage(file);
-      setCapturedImage(null);
+      // Check file size (max 1MB)
+      if (file.size > 1024 * 1024) {
+        toast.error(
+          'File size too large. Please upload an image smaller than 1MB'
+        );
+        event.target.value = '';
+        return;
+      }
 
-      // Create preview
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        event.target.value = '';
+        return;
+      }
+
+      // Create a preview to check image quality
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUploadedImagePreview(e.target?.result as string);
+        const img = new Image();
+        img.onload = () => {
+          // Check image dimensions and quality
+          if (img.width < 200 || img.height < 200) {
+            toast.error(
+              'Image resolution too low. Please use a higher quality image.'
+            );
+            event.target.value = '';
+            return;
+          }
+
+          // Ensure proper aspect ratio for face detection
+          const aspectRatio = img.width / img.height;
+          if (aspectRatio < 0.5 || aspectRatio > 2) {
+            toast.error(
+              'Image aspect ratio should be between 0.5 and 2 for better face detection.'
+            );
+            event.target.value = '';
+            return;
+          }
+
+          const preview = e.target?.result as string;
+          setUploadedImagePreview(preview);
+          setUploadedImage(file);
+          setCapturedImage(null);
+        };
+        img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -45,9 +92,36 @@ function Identification() {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       if (imageSrc) {
-        setCapturedImage(imageSrc);
-        setUploadedImage(null);
-        setUploadedImagePreview(null);
+        // Create a temporary image to check quality
+        const img = new Image();
+        img.onload = () => {
+          // Check image dimensions and quality
+          if (img.width < 200 || img.height < 200) {
+            toast.error(
+              'Image resolution too low. Please try again with better lighting.'
+            );
+            return;
+          }
+
+          // Ensure proper aspect ratio for face detection
+          const aspectRatio = img.width / img.height;
+          if (aspectRatio < 0.5 || aspectRatio > 2) {
+            toast.error(
+              'Please adjust camera position for better face detection.'
+            );
+            return;
+          }
+
+          // Ensure proper base64 format
+          const formattedImage = imageSrc.startsWith('data:image')
+            ? imageSrc
+            : `data:image/jpeg;base64,${imageSrc}`;
+
+          setCapturedImage(formattedImage);
+          setUploadedImage(null);
+          setUploadedImagePreview(null);
+        };
+        img.src = imageSrc;
       }
     }
   }, [webcamRef]);
@@ -79,49 +153,107 @@ function Identification() {
       setIsLoading(true);
       setError(null);
 
-      let result;
+      let imageData: string;
 
       // Use the appropriate recognition method based on input type
       if (capturedImage) {
-        // Use base64 recognition
-        result = await recognizeFaceBase64(
-          capturedImage,
-          preselectedId || undefined
-        );
+        // For captured images, ensure proper base64 format
+        imageData = capturedImage.startsWith('data:image')
+          ? capturedImage
+          : `data:image/jpeg;base64,${capturedImage}`;
       } else if (uploadedImage) {
-        // Use file upload recognition
-        result = await recognizeFace(uploadedImage, preselectedId || undefined);
+        // For uploaded files, convert to base64 with proper format
+        const reader = new FileReader();
+        imageData = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const base64 = reader.result as string;
+            if (!base64) {
+              reject(new Error('Failed to read file'));
+              return;
+            }
+            // Ensure proper base64 format
+            resolve(
+              base64.startsWith('data:image')
+                ? base64
+                : `data:image/jpeg;base64,${base64.split(',')[1]}`
+            );
+          };
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(uploadedImage);
+        });
       } else {
         toast.error('Please capture or upload an image first');
         setIsLoading(false);
         return;
       }
 
-      // Handle successful identification
-      if (result.recognized) {
-        toast.success(`Identified: ${result.username}`);
-        // Navigate to the user's page
-        navigate(`/users/${result.user_id}`);
-      } else {
-        setError(
-          result.message ||
-            'No match found. Please try again with a clearer image.'
-        );
-        toast.error(
-          result.message ||
-            'No match found. Please try again with a clearer image.'
+      if (!imageData) {
+        throw new Error('Invalid image data');
+      }
+
+      // Extract the base64 part without the data URL prefix
+      const base64Data = imageData.split(',')[1];
+      if (!base64Data) {
+        throw new Error('Invalid base64 image data');
+      }
+
+      // Validate image size
+      const imageSize = Math.ceil((base64Data.length * 3) / 4);
+      if (imageSize > 1024 * 1024) {
+        // 1MB limit
+        throw new Error('Image size exceeds 1MB limit');
+      }
+
+      console.log('Sending image data for recognition...');
+
+      // Create FormData for the request
+      const formData = new FormData();
+      formData.append('image_base64', base64Data);
+
+      // Send request to the correct endpoint
+      const response = await fetch(`${API_BASE_URL}/api/recognize`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log('Recognition response:', data);
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || `Recognition failed with status ${response.status}`
         );
       }
+
+      // Handle successful identification
+      if (data.recognized && data.user_id && data.username) {
+        setRecognizedUser({ id: data.user_id, name: data.username });
+        setRecognitionSuccess(true);
+        toast.success(`Identified: ${data.username}`);
+
+        // Wait for animation to complete before redirecting
+        setTimeout(() => {
+          navigate(`/users/${data.user_id}`, { replace: true });
+        }, 2000);
+      } else {
+        const errorMessage =
+          data.message ||
+          'No match found. Please try again with a clearer image.';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } catch (error) {
-      console.error('Error during identification:', error);
+      console.error('Error during recognition:', error);
       const errorMessage =
-        error instanceof Error ? error.message : 'An unexpected error occurred';
+        error instanceof Error
+          ? error.message
+          : 'An error occurred during recognition';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [capturedImage, uploadedImage, navigate, preselectedId]);
+  }, [capturedImage, uploadedImage, navigate]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -139,18 +271,97 @@ function Identification() {
         </p>
       </motion.div>
 
-      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-6 shadow-lg">
+      {/* Recognition Success Animation */}
+      {recognitionSuccess && recognizedUser && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+        >
+          <motion.div
+            className="bg-white/20 backdrop-blur-lg p-8 rounded-2xl border border-white/30 text-center max-w-md mx-4"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <motion.div
+              className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </motion.div>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              Face Recognized!
+            </h3>
+            <p className="text-white/80 mb-6">
+              Identified as: {recognizedUser.name}
+            </p>
+            <div className="w-full bg-white/20 rounded-full h-2">
+              <motion.div
+                className="bg-green-500 h-2 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 2, ease: 'linear' }}
+              />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      <div className="max-w-2xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(0,0,255,0.3)] text-white border border-white/30 space-y-8">
         <div className="flex flex-col items-center">
           {/* Image Display Area */}
-          <div className="w-full max-w-md h-80 bg-gray-700 rounded-lg mb-6 overflow-hidden flex items-center justify-center">
+          <div className="w-full max-w-md h-80 rounded-lg mb-6 overflow-hidden flex items-center justify-center relative">
             {showCamera && !capturedImage ? (
-              <Webcam
-                audio={false}
-                ref={webcamRef}
-                screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode: 'user' }}
-                className="w-full h-full object-cover"
-              />
+              <div className="w-full h-full">
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={{
+                    width: 640,
+                    height: 480,
+                    facingMode: 'user',
+                  }}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Face alignment guide */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-64 h-64 border-2 border-blue-400 rounded-full opacity-50"></div>
+                  </div>
+                  <svg
+                    width="100%"
+                    height="100%"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M20,20 L20,30 L30,30 M70,30 L80,30 L80,20 M80,80 L80,70 L70,70 M30,70 L20,70 L20,80"
+                      stroke="#3b82f6"
+                      strokeWidth="2"
+                      fill="none"
+                    />
+                  </svg>
+                </div>
+                
+              </div>
             ) : capturedImage ? (
               <img
                 src={capturedImage}
@@ -164,7 +375,7 @@ function Identification() {
                 className="w-full h-full object-contain"
               />
             ) : (
-              <AnimatedFaceIcon size="lg" color="#4B5563" />
+              <AnimatedFaceIcon size="lg" color="#ffff" />
             )}
           </div>
 
@@ -234,9 +445,35 @@ function Identification() {
                   whileTap={{ scale: 0.95 }}
                   onClick={identifyPerson}
                   disabled={isLoading}
-                  className={`px-4 py-2 ${isLoading ? 'bg-gray-500' : 'bg-green-600'} text-white rounded-md`}
+                  className={`px-4 py-2 ${isLoading ? 'bg-gray-500' : 'bg-green-600'} text-white rounded-md flex items-center gap-2`}
                 >
-                  {isLoading ? 'Processing...' : 'Identify Person'}
+                  {isLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    'Identify Person'
+                  )}
                 </motion.button>
               </>
             )}

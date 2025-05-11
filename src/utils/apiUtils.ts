@@ -15,6 +15,7 @@ interface BaseUserData {
   phone_company: string;
   second_phone_number?: string;
   category: string;
+  form_type: string;
 }
 
 interface CriminalRecordData {
@@ -37,11 +38,53 @@ interface VehicleData {
   vehicle_color?: string;
   license_expiration?: string;
   manufacture_year?: string;
+  chassis_number?: string;
+  vehicle_number?: string;
+}
+
+interface TravelData {
+  travel_date?: string;
+  travel_destination?: string;
+  arrival_airport?: string;
+  arrival_date?: string;
+  flight_number?: string;
+  return_date?: string;
+}
+
+interface ChildData {
+  date_of_birth?: string;
+  physical_description?: string;
+  last_clothes?: string;
+  area_of_disappearance?: string;
+  last_seen_time?: string;
+  guardian_name?: string;
+  guardian_phone?: string;
+  guardian_id?: string;
+}
+
+interface DisabledData {
+  disability_type?: string;
+  disability_description?: string;
+  medical_condition?: string;
+  special_needs?: string;
+  emergency_contact?: string;
+  emergency_phone?: string;
 }
 
 type UserData = BaseUserData &
   Partial<CriminalRecordData> &
-  Partial<VehicleData>;
+  Partial<VehicleData> &
+  Partial<TravelData> &
+  Partial<ChildData> &
+  Partial<DisabledData>;
+
+// Add type definition at the top of the file
+interface RecognitionResponse {
+  recognized: boolean;
+  username?: string;
+  user_id?: string;
+  message?: string;
+}
 
 /**
  * Register a person using file upload - direct implementation
@@ -58,23 +101,17 @@ export const registerPersonWithFile = async (
     // Add the file
     formData.append('file', file);
 
-    // Add required fields
-    formData.append('name', userData.name || '');
-    formData.append('category', category);
-
-    // IMPORTANT: Add nickname explicitly - this seems to be causing the error
-    // Make sure it's a non-empty string with a default value
-    formData.append('nickname', userData.nickname || 'unnamed'); // Use a default value instead of empty string
-
-    // Add all other fields
+    // Add all user data fields
     for (const [key, value] of Object.entries(userData)) {
-      if (key !== 'name' && key !== 'category' && key !== 'nickname') {
-        formData.append(
-          key,
-          value === null || value === undefined ? '' : String(value)
-        );
+      if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
       }
     }
+
+    // Ensure required fields are set
+    formData.append('category', category);
+    formData.append('form_type', userData.form_type || 'adult');
+    formData.append('nickname', userData.nickname || 'unnamed');
 
     // Log all form data entries for debugging
     console.log('Form data entries:');
@@ -100,7 +137,6 @@ export const registerPersonWithFile = async (
         message: error.message,
       });
 
-      // Log more detailed error information
       if (error.response?.data) {
         console.error('Server error response:', error.response.data);
       }
@@ -117,18 +153,19 @@ export const registerPersonWithBase64 = async (
   category: string
 ) => {
   try {
-    // Ensure category is set
+    // Ensure required fields are set
     payload.category = category;
+    payload.form_type = payload.form_type || 'adult';
+    payload.nickname = payload.nickname || 'unnamed';
 
-    // Ensure nickname is set to a non-empty value
-    if (!payload.nickname || payload.nickname === '') {
-      payload.nickname = 'unnamed'; // Use a default value instead of empty string
-    }
-
-    // Backend expects image_base64 as a string parameter
-    // Make sure it doesn't have the data URI prefix
+    // Handle base64 image
     if (payload.image_base64 && payload.image_base64.startsWith('data:image')) {
       payload.image_base64 = payload.image_base64.split(',')[1];
+    }
+
+    // Validate base64 data
+    if (!payload.image_base64) {
+      throw new Error('Invalid base64 image data');
     }
 
     console.log('Sending base64 registration with keys:', Object.keys(payload));
@@ -150,7 +187,6 @@ export const registerPersonWithBase64 = async (
         message: error.message,
       });
 
-      // Log more detailed error information
       if (error.response?.data) {
         console.error('Server error response:', error.response.data);
       }
@@ -190,16 +226,44 @@ export const recognizeFace = async (file: File, preselectedId?: string) => {
 export const recognizeFaceBase64 = async (
   base64Image: string,
   preselectedId?: string
-) => {
+): Promise<RecognitionResponse> => {
   try {
-    const response = await axios.post(`${API_URL}/recognize`, {
-      image_base64: base64Image,
-      id: preselectedId,
+    // Ensure the base64 string is properly formatted
+    const formattedBase64 = base64Image.startsWith('data:image')
+      ? base64Image.split(',')[1]
+      : base64Image;
+
+    if (!formattedBase64) {
+      throw new Error(
+        'No image provided. Please upload a file or provide base64 data.'
+      );
+    }
+
+    // Create FormData for multipart/form-data
+    const formData = new FormData();
+    formData.append(
+      'file',
+      new Blob([formattedBase64], { type: 'image/jpeg' }),
+      'image.jpg'
+    );
+
+    if (preselectedId) {
+      formData.append('id', preselectedId);
+    }
+
+    const response = await axios.post(`${API_URL}/recognize`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
+
     return response.data;
   } catch (error) {
+    console.error('Error in recognizeFaceBase64:', error);
     if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.message || 'Recognition failed');
+      throw new Error(
+        error.response?.data?.detail || 'Failed to recognize face'
+      );
     }
     throw error;
   }
@@ -215,43 +279,94 @@ export const handleImageUpload = async (
   category: string
 ) => {
   try {
-    // If we have a captured image from webcam (base64)
+    // First try alternative registration with base64
     if (capturedImage) {
-      console.log('Using captured image (base64)');
+      console.log('Using captured image, size:', capturedImage.length);
+      try {
+        const base64Data = capturedImage.startsWith('data:image')
+          ? capturedImage.split(',')[1]
+          : capturedImage;
 
-      // Prepare payload for base64 registration
-      const payload = {
-        ...formData,
-        image_base64: capturedImage,
-      };
+        if (!base64Data) {
+          throw new Error('Invalid base64 image data');
+        }
 
-      return await registerPersonWithBase64(payload, category);
+        const result = await registerPersonWithBase64(
+          { ...formData, image_base64: base64Data },
+          category
+        );
+
+        if (result && result.user_id) {
+          return result;
+        }
+      } catch (error) {
+        console.error(
+          'Alternative registration failed, falling back to standard method:',
+          error
+        );
+      }
     }
-    // If we have a file upload
-    else if (imageFile) {
+
+    // If alternative registration failed or no captured image, try file upload
+    if (imageFile) {
       console.log('Using file upload, file size:', imageFile.size);
 
-      // Try the alternative approach for male category
-      if (category === 'male') {
-        console.log('Using alternative registration approach for male');
-        try {
-          return await registerManAlternative(imageFile, formData);
-        } catch (error) {
-          console.error(
-            'Alternative registration failed, falling back to standard method:',
-            error
-          );
-          // Fall back to standard method if alternative fails
+      // Validate file type
+      if (!imageFile.type.startsWith('image/')) {
+        throw new Error('Invalid file type. Please upload an image file.');
+      }
+
+      // Validate file size (max 1MB)
+      if (imageFile.size > 1024 * 1024) {
+        throw new Error(
+          'File size too large. Please upload an image smaller than 1MB.'
+        );
+      }
+
+      // Create a new FormData instance
+      const formDataObj = new FormData();
+      formDataObj.append('file', imageFile);
+
+      // Add all user data fields
+      for (const [key, value] of Object.entries(formData)) {
+        if (value !== null && value !== undefined) {
+          formDataObj.append(key, String(value));
         }
       }
 
-      // Use the standard implementation
-      return await registerPersonWithFile(imageFile, formData, category);
+      // Ensure required fields are set
+      formDataObj.append('category', category);
+      formDataObj.append('form_type', formData.form_type || 'adult');
+      formDataObj.append('nickname', formData.nickname || 'unnamed');
+
+      // Log form data for debugging
+      console.log('Form data entries:');
+      for (const pair of formDataObj.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
+      // Make the API request
+      const response = await axios.post(
+        `${API_URL}/register/upload`,
+        formDataObj,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 60000, // 60 second timeout
+        }
+      );
+
+      return response.data;
     }
 
     throw new Error('No image provided');
   } catch (error) {
     console.error('Error in handleImageUpload:', error);
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data?.message || error.message;
+      throw new Error(errorMessage);
+    }
     throw error;
   }
 };

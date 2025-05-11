@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || 'https://backend-fast-api-ai.fly.dev/api';
+  process.env.REACT_APP_API_BASE_URL ||
+  'https://backend-fast-api-ai.fly.dev/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -9,6 +10,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 60000, // 60 second timeout
 });
 
 // Add request interceptor for authentication
@@ -19,6 +21,22 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data?.message || error.message;
+      console.error('API Error:', {
+        status: error.response?.status,
+        message: errorMessage,
+        data: error.response?.data,
+      });
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Types
 export interface BaseUser {
@@ -64,7 +82,8 @@ export interface MaleUser extends BaseUser {
   vehicle_model?: string;
 }
 
-export interface FemaleUser extends MaleUser {}
+// Use MaleUser directly for female users since they share the same properties
+export type FemaleUser = MaleUser;
 
 export interface ChildUser extends BaseUser {
   gender?: string;
@@ -107,17 +126,42 @@ export interface DisabledUser extends BaseUser {
 // API functions for male users
 export const maleApi = {
   create: async (userData: MaleUser, image?: File) => {
-    const formData = new FormData();
-    formData.append('user_data', JSON.stringify(userData));
-    if (image) {
-      formData.append('image', image);
+    try {
+      const formData = new FormData();
+
+      // Add user data
+      formData.append('user_data', JSON.stringify(userData));
+
+      // Add image if provided
+      if (image) {
+        // Validate file type
+        if (!image.type.startsWith('image/')) {
+          throw new Error('Invalid file type. Please upload an image file.');
+        }
+
+        // Validate file size (max 1MB)
+        if (image.size > 1024 * 1024) {
+          throw new Error(
+            'File size too large. Please upload an image smaller than 1MB.'
+          );
+        }
+
+        formData.append('image', image);
+      }
+
+      const response = await api.post('/males', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        throw new Error(errorMessage);
+      }
+      throw error;
     }
-    const response = await api.post('/males', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
   },
 
   getAll: async (skip = 0, limit = 100) => {
@@ -134,17 +178,42 @@ export const maleApi = {
 // API functions for female users
 export const femaleApi = {
   create: async (userData: FemaleUser, image?: File) => {
-    const formData = new FormData();
-    formData.append('user_data', JSON.stringify(userData));
-    if (image) {
-      formData.append('image', image);
+    try {
+      const formData = new FormData();
+
+      // Add user data
+      formData.append('user_data', JSON.stringify(userData));
+
+      // Add image if provided
+      if (image) {
+        // Validate file type
+        if (!image.type.startsWith('image/')) {
+          throw new Error('Invalid file type. Please upload an image file.');
+        }
+
+        // Validate file size (max 1MB)
+        if (image.size > 1024 * 1024) {
+          throw new Error(
+            'File size too large. Please upload an image smaller than 1MB.'
+          );
+        }
+
+        formData.append('image', image);
+      }
+
+      const response = await api.post('/females', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        throw new Error(errorMessage);
+      }
+      throw error;
     }
-    const response = await api.post('/females', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
   },
 
   getAll: async (skip = 0, limit = 100) => {
@@ -161,17 +230,42 @@ export const femaleApi = {
 // API functions for child users
 export const childApi = {
   create: async (userData: ChildUser, image?: File) => {
-    const formData = new FormData();
-    formData.append('user_data', JSON.stringify(userData));
-    if (image) {
-      formData.append('image', image);
+    try {
+      const formData = new FormData();
+
+      // Add user data
+      formData.append('user_data', JSON.stringify(userData));
+
+      // Add image if provided
+      if (image) {
+        // Validate file type
+        if (!image.type.startsWith('image/')) {
+          throw new Error('Invalid file type. Please upload an image file.');
+        }
+
+        // Validate file size (max 1MB)
+        if (image.size > 1024 * 1024) {
+          throw new Error(
+            'File size too large. Please upload an image smaller than 1MB.'
+          );
+        }
+
+        formData.append('image', image);
+      }
+
+      const response = await api.post('/children', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        throw new Error(errorMessage);
+      }
+      throw error;
     }
-    const response = await api.post('/children', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
   },
 
   getAll: async (skip = 0, limit = 100) => {
@@ -188,17 +282,42 @@ export const childApi = {
 // API functions for disabled users
 export const disabledApi = {
   create: async (userData: DisabledUser, image?: File) => {
-    const formData = new FormData();
-    formData.append('user_data', JSON.stringify(userData));
-    if (image) {
-      formData.append('image', image);
+    try {
+      const formData = new FormData();
+
+      // Add user data
+      formData.append('user_data', JSON.stringify(userData));
+
+      // Add image if provided
+      if (image) {
+        // Validate file type
+        if (!image.type.startsWith('image/')) {
+          throw new Error('Invalid file type. Please upload an image file.');
+        }
+
+        // Validate file size (max 1MB)
+        if (image.size > 1024 * 1024) {
+          throw new Error(
+            'File size too large. Please upload an image smaller than 1MB.'
+          );
+        }
+
+        formData.append('image', image);
+      }
+
+      const response = await api.post('/disabled', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        throw new Error(errorMessage);
+      }
+      throw error;
     }
-    const response = await api.post('/disabled', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
   },
 
   getAll: async (skip = 0, limit = 100) => {
