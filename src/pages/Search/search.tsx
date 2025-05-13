@@ -650,36 +650,7 @@ const Search: React.FC = () => {
           <span className="font-medium text-white">{filteredData.length}</span>{' '}
           {filteredData.length === 1 ? 'user' : 'users'}
         </div>
-        <div className="flex items-center gap-2">
-          <motion.button
-            onClick={toggleViewMode}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'grid'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white/20 text-white/70'
-            }`}
-            whileHover={{
-              scale: 1.1,
-              backgroundColor:
-                viewMode === 'grid'
-                  ? 'rgb(37, 99, 235)'
-                  : 'rgba(255, 255, 255, 0.3)',
-            }}
-            whileTap={{ scale: 0.9 }}
-            initial={{ rotate: 0 }}
-            animate={{
-              rotate: [0, viewMode === 'grid' ? 180 : -180, 0],
-              transition: { duration: 0.5 },
-            }}
-            aria-label={
-              viewMode === 'grid'
-                ? 'Switch to list view'
-                : 'Switch to grid view'
-            }
-          >
-            {viewMode === 'grid' ? <FaList /> : <FaThLarge />}
-          </motion.button>
-        </div>
+
       </div>
 
       {/* Display filtered data with improved animations */}
