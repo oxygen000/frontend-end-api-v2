@@ -23,6 +23,7 @@ const API_URL = 'https://backend-fast-api-ai.fly.dev/api/users';
 interface User {
   id: string;
   name: string;
+  nickname: string;
   employee_id?: string;
   department?: string;
   role?: string;
@@ -40,10 +41,54 @@ interface User {
 type SortField = 'name' | 'created_at' | 'none';
 type SortDirection = 'asc' | 'desc';
 
+// Create an interface for the API response user data
+interface ApiUser {
+  id: string;
+  name: string;
+  nickname?: string;
+  employee_id?: string;
+  department?: string;
+  role?: string;
+  image_path?: string;
+  image_url?: string;
+  created_at?: string;
+  form_type?: string;
+  category?: string;
+  phone_number?: string;
+  national_id?: string;
+  address?: string;
+  dob?: string;
+  // Add specific optional fields that might be in the API response
+  occupation?: string;
+  has_criminal_record?: boolean | string;
+  guardian_name?: string;
+  disability_type?: string;
+  // Use unknown instead of any for safety
+  [key: string]: unknown;
+}
+
+// Add a custom debounce hook to improve search performance
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 const Search: React.FC = () => {
-  const [data, setData] = useState<User[]>([]);
-  const [filteredData, setFilteredData] = useState<User[]>([]);
+  const [data, setData] = useState<ApiUser[]>([]);
+  const [filteredData, setFilteredData] = useState<ApiUser[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Add debounced search term
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('grid');
@@ -56,10 +101,10 @@ const Search: React.FC = () => {
     category: '',
     formType: '',
   });
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (retryCount = 0, maxRetries = 3) => {
     try {
       setLoading(true);
       setError(null);
@@ -83,6 +128,19 @@ const Search: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+
+      // Implement retry logic
+      if (retryCount < maxRetries) {
+        console.log(`Retrying fetchData (${retryCount + 1}/${maxRetries})...`);
+        setTimeout(
+          () => {
+            fetchData(retryCount + 1, maxRetries);
+          },
+          1000 * (retryCount + 1)
+        ); // Exponential backoff
+        return;
+      }
+
       setError('Failed to load users. Please try again later.');
       setData([]);
       setFilteredData([]);
@@ -91,8 +149,29 @@ const Search: React.FC = () => {
     }
   }, []);
 
+  const getImageUrl = (
+    imagePath: string | null | undefined,
+    userName: string
+  ) => {
+    if (!imagePath) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
+    }
+
+    // Check if image_path already contains the full URL
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+
+    // If image_path doesn't contain 'uploads/' prefix, add it
+    const formattedPath = imagePath.includes('uploads/')
+      ? imagePath
+      : `uploads/${imagePath}`;
+
+    return `https://backend-fast-api-ai.fly.dev/${formattedPath.replace(/^\//, '')}`;
+  };
+
   useEffect(() => {
-    fetchData();
+    fetchData(0, 3);
   }, [fetchData]);
 
   const applyFilters = useCallback(() => {
@@ -101,17 +180,26 @@ const Search: React.FC = () => {
       return;
     }
 
-    const term = searchTerm.toLowerCase();
+    const term = debouncedSearchTerm.toLowerCase(); // Use debounced search term
 
     let filtered = data.filter((user) => {
-      // Text search filter
+      // Improved search logic - searchable fields in a single array for cleaner code
+      const searchableFields = [
+        user.name,
+        user.phone_number,
+        user.national_id,
+        user.employee_id,
+        user.address,
+        user.department,
+        user.nickname,
+        user.form_type,
+      ];
+
       const matchesSearch =
-        user.name.toLowerCase().includes(term) ||
-        (user.phone_number && user.phone_number.toLowerCase().includes(term)) ||
-        (user.national_id && user.national_id.toLowerCase().includes(term)) ||
-        (user.employee_id && user.employee_id.toLowerCase().includes(term)) ||
-        (user.address && user.address.toLowerCase().includes(term)) ||
-        (user.department && user.department.toLowerCase().includes(term));
+        term === '' ||
+        searchableFields.some(
+          (field) => field && field.toLowerCase().includes(term)
+        );
 
       // Phone filter
       const matchesPhoneFilter =
@@ -141,17 +229,24 @@ const Search: React.FC = () => {
       );
     });
 
-    // Apply sorting
+    // Apply sorting - fixed case statements
     if (sortField !== 'none') {
       filtered = [...filtered].sort((a, b) => {
         let comparison = 0;
 
-        if (sortField === 'name') {
-          comparison = a.name.localeCompare(b.name);
-        } else if (sortField === 'created_at') {
-          const dateA = new Date(a.created_at || '').getTime();
-          const dateB = new Date(b.created_at || '').getTime();
-          comparison = dateA - dateB;
+        switch (sortField) {
+          case 'name': {
+            comparison = a.name.localeCompare(b.name);
+            break;
+          }
+          case 'created_at': {
+            const dateA = new Date(a.created_at || '').getTime();
+            const dateB = new Date(b.created_at || '').getTime();
+            comparison = dateA - dateB;
+            break;
+          }
+          default:
+            comparison = 0;
         }
 
         return sortDirection === 'asc' ? comparison : -comparison;
@@ -159,20 +254,27 @@ const Search: React.FC = () => {
     }
 
     setFilteredData(filtered);
-  }, [data, searchTerm, filters, sortField, sortDirection]);
+  }, [data, debouncedSearchTerm, filters, sortField, sortDirection]);
 
   useEffect(() => {
     if (Array.isArray(data) && data.length > 0) {
       applyFilters();
     }
-  }, [data, searchTerm, filters, sortField, sortDirection, applyFilters]);
+  }, [
+    data,
+    debouncedSearchTerm,
+    filters,
+    sortField,
+    sortDirection,
+    applyFilters,
+  ]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
   const toggleViewMode = () => {
-    setViewMode(viewMode === 'grid' ? 'row' : 'grid');
+    setViewMode((current) => (current === 'grid' ? 'row' : 'grid'));
   };
 
   const toggleFilters = () => {
@@ -216,7 +318,7 @@ const Search: React.FC = () => {
     fetchData();
   };
 
-  const handleUserClick = async (user: User) => {
+  const handleUserClick = async (user: ApiUser) => {
     try {
       const response = await axios.get(`${API_URL}/${user.id}`);
       if (response.data) {
@@ -232,6 +334,169 @@ const Search: React.FC = () => {
   const closeModal = () => {
     setShowModal(false);
     setSelectedUser(null);
+  };
+
+  const FORM_TYPES = [
+    { value: '', label: 'All Form Types' },
+    { value: 'child', label: 'Child' },
+    { value: 'disabled', label: 'Disabled' },
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+  ];
+
+  const NoResultsFound = () => (
+    <div className="text-center py-10 text-white">
+      <svg
+        className="mx-auto h-12 w-12 text-white/50"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <p className="mt-4 text-xl">No results found</p>
+      <p className="text-white/70">
+        Try a different search term or adjust filters
+      </p>
+    </div>
+  );
+
+  // Update the adaptUser function to use ApiUser instead of any
+  const adaptUser = (user: ApiUser): User => {
+    return {
+      ...user,
+      nickname: user.nickname || '',
+    };
+  };
+
+  // Replace the existing animation variants with new, more sophisticated ones
+  const gridItemVariants = {
+    hidden: ({ isGrid }: { isGrid: boolean; index?: number }) => ({
+      opacity: 0,
+      rotateX: isGrid ? -10 : 0,
+      translateY: isGrid ? -50 : 0,
+      translateX: isGrid ? 0 : -50,
+      filter: 'blur(10px)',
+      scale: 0.8,
+    }),
+    visible: {
+      opacity: 1,
+      rotateX: 0,
+      translateY: 0,
+      translateX: 0,
+      filter: 'blur(0px)',
+      scale: 1,
+      transition: {
+        type: 'spring',
+        damping: 20,
+        stiffness: 200,
+        duration: 0.4,
+      },
+    },
+    exit: ({ isGrid }: { isGrid: boolean; index?: number }) => ({
+      opacity: 0,
+      rotateX: isGrid ? 10 : 0,
+      translateY: isGrid ? 50 : 0,
+      translateX: isGrid ? 0 : 50,
+      filter: 'blur(10px)',
+      scale: 0.8,
+      transition: {
+        duration: 0.3,
+        ease: 'easeInOut',
+      },
+    }),
+    hover: {
+      scale: 1.05,
+      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+      transition: {
+        duration: 0.2,
+      },
+    },
+    tap: {
+      scale: 0.98,
+      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
+      transition: {
+        duration: 0.1,
+      },
+    },
+  };
+
+  // New container variants with more elaborate animations
+  const containerVariants = {
+    hidden: {
+      opacity: 0,
+    },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.07,
+        delayChildren: 0.1,
+        when: 'beforeChildren',
+        ease: 'easeOut',
+      },
+    },
+    exit: {
+      opacity: 0,
+      filter: 'blur(10px)',
+      transition: {
+        staggerChildren: 0.05,
+        staggerDirection: -1,
+        when: 'afterChildren',
+        ease: 'easeIn',
+        duration: 0.4,
+      },
+    },
+  };
+
+  // New modal animation variants
+  const modalVariants = {
+    hidden: {
+      opacity: 0,
+      scale: 0.8,
+      rotateY: -10,
+      filter: 'blur(10px)',
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      rotateY: 0,
+      filter: 'blur(0px)',
+      transition: {
+        type: 'spring',
+        damping: 25,
+        stiffness: 300,
+        duration: 0.5,
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.8,
+      rotateY: 10,
+      filter: 'blur(10px)',
+      transition: {
+        duration: 0.3,
+        ease: 'easeInOut',
+      },
+    },
+  };
+
+  // New backdrop animation
+  const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { duration: 0.3 },
+    },
+    exit: {
+      opacity: 0,
+      transition: { duration: 0.3, delay: 0.1 },
+    },
   };
 
   if (loading) {
@@ -324,222 +589,226 @@ const Search: React.FC = () => {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="mb-6 p-4 bg-white/10 backdrop-blur-md rounded-lg border border-white/20"
+          className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-lg border border-white/20"
         >
-          <h3 className="text-white font-medium mb-3">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="hasPhone"
-                  name="hasPhone"
-                  checked={filters.hasPhone}
-                  onChange={handleFilterChange}
-                  className="mr-2 h-4 w-4"
-                />
-                <label htmlFor="hasPhone" className="text-white">
-                  Has Phone
-                </label>
-              </div>
+          <h3 className="text-white font-semibold text-lg mb-5">
+            Filter Options
+          </h3>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="hasNationalId"
-                  name="hasNationalId"
-                  checked={filters.hasNationalId}
-                  onChange={handleFilterChange}
-                  className="mr-2 h-4 w-4"
-                />
-                <label htmlFor="hasNationalId" className="text-white">
-                  Has National ID
-                </label>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="category" className="text-white block">
-                  Category
-                </label>
-                <select
-                  id="category"
-                  name="category"
-                  value={filters.category}
-                  onChange={handleFilterChange}
-                  className="w-full p-2 bg-white/20 border border-white/30 rounded text-white"
-                >
-                  <option value="">All Categories</option>
-                  <option value="adult">Adult</option>
-                  <option value="child">Child</option>
-                  <option value="disabled">Disabled</option>
-                </select>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Form Type Dropdown */}
+            <div>
+              <label htmlFor="formType" className="text-white block mb-1">
+                Form Type
+              </label>
+              <select
+                id="formType"
+                name="formType"
+                value={filters.formType}
+                onChange={handleFilterChange}
+                className="w-full p-2 bg-white/20 border border-white/30 rounded text-white"
+              >
+                <option value="">All</option>
+                {FORM_TYPES.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="space-y-2">
-              <div className="space-y-2">
-                <label htmlFor="formType" className="text-white block">
-                  Form Type
-                </label>
-                <select
-                  id="formType"
-                  name="formType"
-                  value={filters.formType}
-                  onChange={handleFilterChange}
-                  className="w-full p-2 bg-white/20 border border-white/30 rounded text-white"
-                >
-                  <option value="">All Form Types</option>
-                  <option value="adult">Adult</option>
-                  <option value="child">Child</option>
-                  <option value="disabled">Disabled</option>
-                </select>
-              </div>
-
-              <div className="mt-4">
-                <label className="text-white block mb-2">Sort By</label>
-                <div className="flex gap-2">
+            {/* Sort Buttons */}
+            <div className="md:col-span-2 lg:col-span-3">
+              <label className="text-white block mb-2">Sort By</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Name', field: 'name' },
+                  { label: 'Date', field: 'created_at' },
+                ].map(({ label, field }) => (
                   <button
-                    onClick={() => handleSort('name')}
-                    className={`flex items-center gap-1 px-3 py-1 rounded ${sortField === 'name' ? 'bg-blue-600 text-white' : 'bg-white/20 text-white/70'}`}
+                    key={field}
+                    onClick={() => handleSort(field as SortField)}
+                    className={`flex items-center gap-1 px-3 py-1 rounded transition-colors ${
+                      sortField === field
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white/20 text-white/70 hover:bg-white/30'
+                    }`}
                   >
-                    Name {getSortIcon('name')}
+                    {label} {getSortIcon(field as SortField)}
                   </button>
-                  <button
-                    onClick={() => handleSort('created_at')}
-                    className={`flex items-center gap-1 px-3 py-1 rounded ${sortField === 'created_at' ? 'bg-blue-600 text-white' : 'bg-white/20 text-white/70'}`}
-                  >
-                    Date {getSortIcon('created_at')}
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Results count */}
-      <div className="mb-4 text-white/70">
-        Found {filteredData.length}{' '}
-        {filteredData.length === 1 ? 'user' : 'users'}
+      {/* Results count with improved styling and view toggle */}
+      <div className="mb-4 text-white/70 flex justify-between items-center">
+        <div>
+          Found{' '}
+          <span className="font-medium text-white">{filteredData.length}</span>{' '}
+          {filteredData.length === 1 ? 'user' : 'users'}
+        </div>
+        <div className="flex items-center gap-2">
+          <motion.button
+            onClick={toggleViewMode}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white/20 text-white/70'
+            }`}
+            whileHover={{
+              scale: 1.1,
+              backgroundColor:
+                viewMode === 'grid'
+                  ? 'rgb(37, 99, 235)'
+                  : 'rgba(255, 255, 255, 0.3)',
+            }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ rotate: 0 }}
+            animate={{
+              rotate: [0, viewMode === 'grid' ? 180 : -180, 0],
+              transition: { duration: 0.5 },
+            }}
+            aria-label={
+              viewMode === 'grid'
+                ? 'Switch to list view'
+                : 'Switch to grid view'
+            }
+          >
+            {viewMode === 'grid' ? <FaList /> : <FaThLarge />}
+          </motion.button>
+        </div>
       </div>
 
-      {/* Display filtered data */}
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredData.length > 0 ? (
-            filteredData.map((user) => (
-              <motion.div
-                key={user.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Card user={user} />
-              </motion.div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-10 text-white">
-              <svg
-                className="mx-auto h-12 w-12 text-white/50"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="mt-4 text-xl">No results found</p>
-              <p className="text-white/70">
-                Try a different search term or adjust filters
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredData.length > 0 ? (
-            filteredData.map((user) => (
-              <motion.div
-                key={user.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white/20 backdrop-blur-md rounded-lg p-4 border border-white/30 hover:bg-white/30 transition-all duration-300"
-                onClick={() => handleUserClick(user)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                    {user.name.charAt(0).toUpperCase()}
+      {/* Display filtered data with improved animations */}
+      <AnimatePresence mode="wait">
+        {viewMode === 'grid' ? (
+          <motion.div
+            key="grid-view"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {filteredData.length > 0 ? (
+              filteredData.map((user, index) => (
+                <motion.div
+                  key={user.id}
+                  custom={{ isGrid: true, index }}
+                  variants={gridItemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  whileHover="hover"
+                  whileTap="tap"
+                  layoutId={user.id}
+                  onClick={() => handleUserClick(user)}
+                  className="cursor-pointer bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/30"
+                >
+                  <Card user={adaptUser(user)} />
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full">
+                <NoResultsFound />
+              </div>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="list-view"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="space-y-4"
+          >
+            {filteredData.length > 0 ? (
+              filteredData.map((user, index) => (
+                <motion.div
+                  key={user.id}
+                  custom={{ isGrid: false, index }}
+                  variants={gridItemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  whileHover="hover"
+                  whileTap="tap"
+                  layoutId={user.id}
+                  className="bg-white/20 backdrop-blur-md rounded-lg p-4 border border-white/30 cursor-pointer"
+                  onClick={() => handleUserClick(user)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-blue-500">
+                      {user.image_path || user.image_url ? (
+                        <img
+                          src={getImageUrl(
+                            user.image_path || user.image_url,
+                            user.name
+                          )}
+                          alt={user.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="text-lg font-semibold text-white">
+                        {user.name}
+                      </h3>
+                      {user.category && (
+                        <p className="text-white/70 text-sm">{user.category}</p>
+                      )}
+                      {user.department && (
+                        <p className="text-white/70 text-sm">
+                          {user.department}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-white font-medium">
+                        {user.phone_number || 'N/A'}
+                      </p>
+                      <p className="text-white/70 text-sm">
+                        ID: {user.national_id || user.employee_id || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="ml-4 px-4 py-2 bg-blue-600/70 hover:bg-blue-700 text-white rounded transition-colors duration-300 flex-shrink-0">
+                      View
+                    </div>
                   </div>
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-semibold text-white">
-                      {user.name}
-                    </h3>
-                    {user.category && (
-                      <p className="text-white/70 text-sm">{user.category}</p>
-                    )}
-                    {user.department && (
-                      <p className="text-white/70 text-sm">{user.department}</p>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="text-white font-medium">
-                      {user.phone_number || 'N/A'}
-                    </p>
-                    <p className="text-white/70 text-sm">
-                      ID: {user.national_id || user.employee_id || 'N/A'}
-                    </p>
-                  </div>
-                  <button className="ml-4 px-4 py-2 bg-blue-600/70 hover:bg-blue-700 text-white rounded transition-colors duration-300 flex-shrink-0">
-                    View
-                  </button>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="text-center py-10 text-white">
-              <svg
-                className="mx-auto h-12 w-12 text-white/50"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="mt-4 text-xl">No results found</p>
-              <p className="text-white/70">
-                Try a different search term or adjust filters
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+                </motion.div>
+              ))
+            ) : (
+              <NoResultsFound />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* User Details Modal */}
+      {/* User Details Modal with enhanced animations */}
       <AnimatePresence>
         {showModal && selectedUser && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={backdropVariants}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={closeModal}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              variants={modalVariants}
               className="bg-white/20 backdrop-blur-md rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -547,12 +816,14 @@ const Search: React.FC = () => {
                 <h2 className="text-2xl font-semibold text-white">
                   User Details
                 </h2>
-                <button
+                <motion.button
                   onClick={closeModal}
                   className="text-white/70 hover:text-white transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   <FaTimes size={24} />
-                </button>
+                </motion.button>
               </div>
 
               <div className="flex flex-col md:flex-row gap-6">
@@ -560,7 +831,10 @@ const Search: React.FC = () => {
                   <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-white/30">
                     {selectedUser.image_url || selectedUser.image_path ? (
                       <img
-                        src={selectedUser.image_url || selectedUser.image_path}
+                        src={getImageUrl(
+                          selectedUser.image_path || selectedUser.image_url,
+                          selectedUser.name
+                        )}
                         alt={selectedUser.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {

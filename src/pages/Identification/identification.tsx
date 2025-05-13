@@ -5,10 +5,7 @@ import { motion } from 'framer-motion';
 import { FaCamera, FaRedo, FaUpload } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
-
-// API base URL from environment variable
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://backend-fast-api-ai.fly.dev';
+import { registrationApi } from '../../services/api';
 
 function Identification() {
   const navigate = useNavigate();
@@ -153,94 +150,54 @@ function Identification() {
       setIsLoading(true);
       setError(null);
 
-      let imageData: string;
+      if (uploadedImage) {
+        // For uploaded files, use the file-based recognition
+        const data = await registrationApi.recognizeFace(
+          uploadedImage,
+          preselectedId || undefined
+        );
 
-      // Use the appropriate recognition method based on input type
-      if (capturedImage) {
-        // For captured images, ensure proper base64 format
-        imageData = capturedImage.startsWith('data:image')
-          ? capturedImage
-          : `data:image/jpeg;base64,${capturedImage}`;
-      } else if (uploadedImage) {
-        // For uploaded files, convert to base64 with proper format
-        const reader = new FileReader();
-        imageData = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => {
-            const base64 = reader.result as string;
-            if (!base64) {
-              reject(new Error('Failed to read file'));
-              return;
-            }
-            // Ensure proper base64 format
-            resolve(
-              base64.startsWith('data:image')
-                ? base64
-                : `data:image/jpeg;base64,${base64.split(',')[1]}`
-            );
-          };
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsDataURL(uploadedImage);
-        });
+        if (data.recognized && data.user_id && data.username) {
+          setRecognizedUser({ id: data.user_id, name: data.username });
+          setRecognitionSuccess(true);
+          toast.success(`Identified: ${data.username}`);
+
+          // Wait for animation to complete before redirecting
+          setTimeout(() => {
+            navigate(`/users/${data.user_id}`, { replace: true });
+          }, 2000);
+        } else {
+          const errorMessage =
+            data.message ||
+            'No match found. Please try again with a clearer image.';
+          setError(errorMessage);
+          toast.error(errorMessage);
+        }
+      } else if (capturedImage) {
+        // For captured images, use the base64 recognition
+        const data = await registrationApi.recognizeFaceBase64(
+          capturedImage,
+          preselectedId || undefined
+        );
+
+        if (data.recognized && data.user_id && data.username) {
+          setRecognizedUser({ id: data.user_id, name: data.username });
+          setRecognitionSuccess(true);
+          toast.success(`Identified: ${data.username}`);
+
+          // Wait for animation to complete before redirecting
+          setTimeout(() => {
+            navigate(`/users/${data.user_id}`, { replace: true });
+          }, 2000);
+        } else {
+          const errorMessage =
+            data.message ||
+            'No match found. Please try again with a clearer image.';
+          setError(errorMessage);
+          toast.error(errorMessage);
+        }
       } else {
         toast.error('Please capture or upload an image first');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!imageData) {
-        throw new Error('Invalid image data');
-      }
-
-      // Extract the base64 part without the data URL prefix
-      const base64Data = imageData.split(',')[1];
-      if (!base64Data) {
-        throw new Error('Invalid base64 image data');
-      }
-
-      // Validate image size
-      const imageSize = Math.ceil((base64Data.length * 3) / 4);
-      if (imageSize > 1024 * 1024) {
-        // 1MB limit
-        throw new Error('Image size exceeds 1MB limit');
-      }
-
-      console.log('Sending image data for recognition...');
-
-      // Create FormData for the request
-      const formData = new FormData();
-      formData.append('image_base64', base64Data);
-
-      // Send request to the correct endpoint
-      const response = await fetch(`${API_BASE_URL}/api/recognize`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-      console.log('Recognition response:', data);
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || `Recognition failed with status ${response.status}`
-        );
-      }
-
-      // Handle successful identification
-      if (data.recognized && data.user_id && data.username) {
-        setRecognizedUser({ id: data.user_id, name: data.username });
-        setRecognitionSuccess(true);
-        toast.success(`Identified: ${data.username}`);
-
-        // Wait for animation to complete before redirecting
-        setTimeout(() => {
-          navigate(`/users/${data.user_id}`, { replace: true });
-        }, 2000);
-      } else {
-        const errorMessage =
-          data.message ||
-          'No match found. Please try again with a clearer image.';
-        setError(errorMessage);
-        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error during recognition:', error);
@@ -253,7 +210,7 @@ function Identification() {
     } finally {
       setIsLoading(false);
     }
-  }, [capturedImage, uploadedImage, navigate]);
+  }, [capturedImage, uploadedImage, navigate, preselectedId]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -360,7 +317,6 @@ function Identification() {
                     />
                   </svg>
                 </div>
-                
               </div>
             ) : capturedImage ? (
               <img

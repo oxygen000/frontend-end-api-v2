@@ -4,49 +4,73 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Input from '../../components/Input';
 import Textarea from '../../components/Textarea';
-import axios from 'axios';
 import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
 import Webcam from 'react-webcam';
-import { handleImageUpload } from '../../utils/apiUtils';
-import { PERSON_CATEGORIES } from '../../config/constants';
+import { BASE_API_URL } from '../../config/constants';
+import { toast } from 'react-hot-toast';
+import { registrationApi } from '../../services/api';
 
-// SectionButtons component
-const SectionButtons = ({
-  onPrev,
-  onNext,
-}: {
-  onPrev?: () => void;
-  onNext?: () => void;
-}) => (
-  <div className="flex justify-between mt-6">
-    {onPrev && (
-      <button
-        type="button"
-        onClick={onPrev}
-        className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-      >
-        Previous
-      </button>
-    )}
-    {onNext && (
-      <button
-        type="button"
-        onClick={onNext}
-        className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors ml-auto"
-      >
-        Next
-      </button>
-    )}
-    {!onNext && (
-      <button
-        type="submit"
-        className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors ml-auto"
-      >
-        Submit
-      </button>
-    )}
-  </div>
-);
+// Define proper interfaces needed
+// This allows user.face_id access without type errors
+interface UserWithFaceId {
+  id: string;
+  name: string;
+  face_id?: string;
+  // Add other potential properties
+  [key: string]: unknown;
+}
+
+interface FormData {
+  // Basic information
+  name: string;
+  dob: string;
+  gender: string;
+  national_id: string;
+  address: string;
+
+  // Contact information
+  phone_number: string;
+  phone_company: string;
+  second_phone_number: string;
+
+  // Disability information
+  disability_type: string;
+  disability_description: string;
+  medical_condition: string;
+  special_needs: string;
+  emergency_contact: string;
+  emergency_phone: string;
+
+  // Additional information
+  additional_notes: string;
+  guardian_name: string;
+  guardian_phone: string;
+  relationship: string;
+  form_type: string;
+  image?: File;
+}
+
+const initialFormData: FormData = {
+  name: '',
+  dob: '',
+  gender: '',
+  national_id: '',
+  address: '',
+  phone_number: '',
+  phone_company: '',
+  second_phone_number: '',
+  disability_type: '',
+  disability_description: '',
+  medical_condition: '',
+  special_needs: '',
+  emergency_contact: '',
+  emergency_phone: '',
+  additional_notes: '',
+  guardian_name: '',
+  guardian_phone: '',
+  relationship: '',
+  form_type: 'disabled',
+};
 
 function AddDisabled() {
   const [currentSection, setCurrentSection] = useState(1);
@@ -55,36 +79,77 @@ function AddDisabled() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const webcamRef = useRef<Webcam>(null);
-  const [, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [, setRegisteredUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Form data structure
-  const [personDetails, setPersonDetails] = useState({
-    // Basic information
-    name: '',
-    dob: '',
-    gender: '',
-    nationalId: '',
-    address: '',
+  const [personDetails, setPersonDetails] = useState<FormData>(initialFormData);
 
-    // Contact information
-    phoneNumber: '',
-    secondaryPhone: '',
-
-    // Disability information
-    disabilityType: '',
-    disabilityDetails: '',
-    medicalConditions: '',
-    medications: '',
-
-    // Additional information
-    additionalNotes: '',
-    guardianName: '',
-    guardianPhone: '',
-    relationship: '',
-  });
+  // Moved inside component to access loading state
+  const SectionButtons = ({
+    onPrev,
+    onNext,
+  }: {
+    onPrev?: () => void;
+    onNext?: () => void;
+  }) => (
+    <div className="flex justify-between mt-6">
+      {onPrev && (
+        <button
+          type="button"
+          onClick={onPrev}
+          className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+        >
+          Previous
+        </button>
+      )}
+      {onNext && (
+        <button
+          type="button"
+          onClick={onNext}
+          className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors ml-auto"
+        >
+          Next
+        </button>
+      )}
+      {!onNext && (
+        <button
+          type="submit"
+          disabled={loading}
+          className={`px-6 py-2 ${loading ? 'bg-gray-500' : 'bg-green-600 hover:bg-green-700'} text-white rounded-md transition-colors ml-auto flex items-center`}
+        >
+          {loading ? (
+            <>
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Processing...
+            </>
+          ) : (
+            'Submit'
+          )}
+        </button>
+      )}
+    </div>
+  );
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -136,10 +201,10 @@ function AddDisabled() {
       if (!personDetails.dob) errors.push('Date of Birth is required');
       if (!personDetails.gender) errors.push('Gender is required');
     } else if (currentSection === 2) {
-      if (!personDetails.phoneNumber) errors.push('Phone Number is required');
+      if (!personDetails.phone_number) errors.push('Phone Number is required');
       if (!personDetails.address) errors.push('Address is required');
     } else if (currentSection === 3) {
-      if (!personDetails.disabilityType)
+      if (!personDetails.disability_type)
         errors.push('Disability Type is required');
       if (!selectedImage && !capturedImage)
         errors.push("Person's Photo is required");
@@ -184,23 +249,7 @@ function AddDisabled() {
   };
 
   const clearForm = () => {
-    setPersonDetails({
-      name: '',
-      dob: '',
-      gender: '',
-      nationalId: '',
-      address: '',
-      phoneNumber: '',
-      secondaryPhone: '',
-      disabilityType: '',
-      disabilityDetails: '',
-      medicalConditions: '',
-      medications: '',
-      additionalNotes: '',
-      guardianName: '',
-      guardianPhone: '',
-      relationship: '',
-    });
+    setPersonDetails(initialFormData);
     setSelectedImage(null);
     setPreviewUrl('');
     setCapturedImage(null);
@@ -209,73 +258,311 @@ function AddDisabled() {
     setSubmitSuccess(false);
   };
 
+  // Enhanced form submission with better error handling and face_id retry
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const formData = {
-        ...personDetails,
-        guardian_name: personDetails.guardianName,
-        guardian_phone: personDetails.guardianPhone,
-        relationship: personDetails.relationship,
-        national_id: personDetails.nationalId || '',
-        phone_number: personDetails.phoneNumber || '',
-        phone_company: '', // Add required field
-        category: PERSON_CATEGORIES.DISABLED, // Add required category field
-        form_type: 'disabled',
-      };
+      // Debug the form data first
+      console.log('Person details being submitted:', personDetails);
 
-      if (!selectedImage && !capturedImage) {
-        throw new Error("Person's Photo is required");
-      }
+      // Create a FormData object to handle file upload
+      const formDataToSend = new FormData();
 
-      // Submit to API
-      const response = await handleImageUpload(
-        selectedImage,
-        capturedImage,
-        formData,
-        PERSON_CATEGORIES.DISABLED
+      // Basic user fields - match exactly what the backend expects
+      formDataToSend.append('name', personDetails.name);
+      formDataToSend.append('nickname', personDetails.name.split(' ')[0] || '');
+      formDataToSend.append('dob', personDetails.dob);
+      formDataToSend.append('national_id', personDetails.national_id);
+      formDataToSend.append('address', personDetails.address || '');
+      formDataToSend.append('phone_number', personDetails.phone_number || '');
+      formDataToSend.append('phone_company', personDetails.phone_company || '');
+      formDataToSend.append(
+        'second_phone_number',
+        personDetails.second_phone_number || ''
+      );
+      formDataToSend.append('category', 'disabled');
+      formDataToSend.append('form_type', 'disabled');
+
+      // Additional fields that might be required by the backend
+      formDataToSend.append('employee_id', '');
+      formDataToSend.append('department', '');
+      formDataToSend.append('role', '');
+      formDataToSend.append('bypass_angle_check', 'false');
+      formDataToSend.append('train_multiple', 'true');
+      formDataToSend.append('date_of_birth', personDetails.dob); // Duplicate of dob for compatibility
+
+      // Disability-specific fields with exact backend field names
+      formDataToSend.append(
+        'disability_type',
+        personDetails.disability_type || ''
+      );
+      formDataToSend.append(
+        'disability_details',
+        personDetails.disability_description || ''
+      );
+      formDataToSend.append(
+        'medical_condition',
+        personDetails.medical_condition || ''
+      );
+      formDataToSend.append('medication', personDetails.special_needs || '');
+      formDataToSend.append(
+        'caregiver_name',
+        personDetails.guardian_name || ''
+      );
+      formDataToSend.append(
+        'caregiver_phone',
+        personDetails.guardian_phone || ''
+      );
+      formDataToSend.append(
+        'caregiver_relationship',
+        personDetails.relationship || ''
       );
 
-      console.log('Registration successful:', response);
+      // Additional important fields
+      formDataToSend.append('description', ''); // Empty but required field
+      formDataToSend.append('notes', ''); // Empty but required field
+      formDataToSend.append('additional_notes', ''); // Empty but required field
+
+      // Create a complete data object and append as JSON
+      const disabledData = {
+        name: personDetails.name,
+        nickname: personDetails.name.split(' ')[0] || '',
+        dob: personDetails.dob,
+        date_of_birth: personDetails.dob,
+        national_id: personDetails.national_id,
+        address: personDetails.address || '',
+        phone_number: personDetails.phone_number || '',
+        phone_company: personDetails.phone_company || '',
+        second_phone_number: personDetails.second_phone_number || '',
+        category: 'disabled',
+        form_type: 'disabled',
+        disability_type: personDetails.disability_type || '',
+        disability_details: personDetails.disability_description || '',
+        medical_condition: personDetails.medical_condition || '',
+        medication: personDetails.special_needs || '',
+        caregiver_name: personDetails.guardian_name || '',
+        caregiver_phone: personDetails.guardian_phone || '',
+        caregiver_relationship: personDetails.relationship || '',
+        gender: personDetails.gender || '',
+        employee_id: '',
+        department: '',
+        role: '',
+      };
+
+      // Append both user_data and disabled_data as JSON
+      formDataToSend.append('user_data', JSON.stringify(disabledData));
+      formDataToSend.append('disabled_data', JSON.stringify(disabledData));
+
+      // Handle image from file upload or webcam
+      let imageFile: File | null = null;
+
+      if (selectedImage) {
+        // If image was uploaded from file input
+        imageFile = selectedImage;
+        console.log(
+          'Using uploaded image file:',
+          imageFile.name,
+          imageFile.size,
+          'bytes',
+          imageFile.type
+        );
+      } else if (capturedImage) {
+        // If image was captured from webcam, convert base64 to file
+        console.log('Converting webcam image from base64 to file');
+
+        // Extract the base64 part if it's a data URL
+        let base64Data = capturedImage;
+        if (base64Data.startsWith('data:image/jpeg;base64,')) {
+          base64Data = capturedImage.split(',')[1];
+        } else if (base64Data.startsWith('data:')) {
+          // Handle other image formats
+          const matches = base64Data.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            base64Data = matches[2];
+          } else {
+            console.error('Invalid data URL format');
+            throw new Error('Invalid image format from webcam');
+          }
+        }
+
+        try {
+          const byteString = atob(base64Data);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+
+          const blob = new Blob([ab], { type: 'image/jpeg' });
+          imageFile = new File([blob], `webcam_capture_${Date.now()}.jpg`, {
+            type: 'image/jpeg',
+          });
+          console.log(
+            'Created file from webcam image:',
+            imageFile.size,
+            'bytes',
+            imageFile.type
+          );
+        } catch (error) {
+          console.error('Error converting base64 to file:', error);
+          throw new Error(
+            'Failed to process webcam image. Please try again or upload a file instead.'
+          );
+        }
+      }
+
+      if (imageFile) {
+        // Append the file with name 'file' as expected by the backend
+        formDataToSend.append('file', imageFile);
+
+        console.log('Image file appended to form data:', {
+          name: imageFile.name,
+          size: imageFile.size,
+          type: imageFile.type,
+          lastModified: new Date(imageFile.lastModified).toISOString(),
+        });
+
+        // For debugging - log all form data entries
+        console.log('Form data entries being sent to server:');
+        for (const pair of formDataToSend.entries()) {
+          console.log(
+            pair[0],
+            pair[1] instanceof File
+              ? `[File: ${pair[1].name}, ${pair[1].size} bytes]`
+              : pair[1]
+          );
+        }
+      } else {
+        // No image was provided
+        throw new Error('Please provide an image');
+      }
+
+      // Debug log
+      console.log('Sending registration with image to API');
+
+      // Use the registration API service
+      const responseData = await registrationApi.registerUser(formDataToSend);
+      console.log('Registration successful:', responseData);
 
       // Show success message and store the user ID from response
       setSubmitSuccess(true);
-      if (response && response.user_id) {
-        setRegisteredUserId(response.user_id);
-      }
 
-      // Reset form after delay
-      setTimeout(() => {
-        clearForm();
-      }, 5000);
-    } catch (error) {
-      console.error('Registration failed:', error);
+      // Use the ID from the response to identify the user
+      const userId = responseData?.user_id;
+      const userName = responseData?.user?.name || personDetails.name;
+      toast.success(`${userName} registered successfully!`);
 
-      // Handle API errors
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          // Server responded with an error
-          const errorMessage =
-            error.response.data?.message || 'Unknown server error';
-          setFormErrors([errorMessage]);
-        } else if (error.request) {
-          // No response received
-          setFormErrors([
-            'No response from server. Please check your internet connection.',
-          ]);
-        } else {
-          // Request setup error
-          setFormErrors(['Error setting up request. Please try again.']);
+      console.log(`User registered with ID: ${userId || 'Not available'}`);
+      console.log(
+        `Image path: ${responseData?.user?.image_path || 'Not available'}`
+      );
+      console.log(`Face ID: ${responseData?.face_id || 'Not available'}`);
+
+      // Fix the user verification section
+      if (userId) {
+        // Try to verify the registration up to 3 times with delays
+        let user: UserWithFaceId | null = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries) {
+          try {
+            const verificationData =
+              await registrationApi.verifyRegistration(userId);
+            // Cast the user to our interface that includes face_id
+            user = verificationData.user as UserWithFaceId;
+
+            if (user && user.face_id) {
+              console.log(
+                'User verification successful with face_id:',
+                user.face_id
+              );
+              break;
+            } else {
+              console.log(
+                `Verification attempt ${retryCount + 1}: No face_id yet`
+              );
+              retryCount++;
+
+              if (retryCount < maxRetries) {
+                // Wait before retrying (increasing delay with each retry)
+                const delay = 1000 * retryCount;
+                console.log(`Waiting ${delay}ms before retrying...`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+              }
+            }
+          } catch (error) {
+            console.error('Error during verification:', error);
+            retryCount++;
+            if (retryCount >= maxRetries) break;
+          }
+        }
+
+        if (!user || !user.face_id) {
+          console.warn(
+            'User verification completed but no face_id was generated'
+          );
+          // Try to trigger face processing again by sending a verification request
+          try {
+            if (imageFile) {
+              console.log(
+                'Attempting to trigger face processing via verify-face endpoint'
+              );
+              const verifyFormData = new FormData();
+              verifyFormData.append('file', imageFile);
+
+              const verifyResponse = await fetch(
+                `${BASE_API_URL}/api/verify-face`,
+                {
+                  method: 'POST',
+                  body: verifyFormData,
+                }
+              );
+
+              if (verifyResponse.ok) {
+                console.log(
+                  'Face verification successful, this may help generate face_id'
+                );
+              }
+            }
+          } catch (verifyError) {
+            console.error('Error during face verification:', verifyError);
+          }
         }
       } else {
-        // Non-Axios error
-        setFormErrors([
-          (error as Error).message || 'An unknown error occurred',
-        ]);
+        console.warn('No user ID received from server, skipping verification');
       }
+
+      // Reset form after success
+      setTimeout(() => {
+        setPersonDetails(initialFormData);
+        setCapturedImage(null);
+        setSelectedImage(null);
+        setPreviewUrl('');
+        setCurrentSection(1);
+        setFormErrors([]);
+        setSubmitSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error registering disabled person:', error);
+
+      // Display error in form
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'An unknown error occurred during registration';
+
+      setFormErrors([errorMessage]);
+      toast.error(errorMessage);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -429,8 +716,8 @@ function AddDisabled() {
               </div>
               <Input
                 label="National ID"
-                name="nationalId"
-                value={personDetails.nationalId}
+                name="national_id"
+                value={personDetails.national_id}
                 onChange={handleInputChange}
               />
               <SectionButtons onNext={nextSection} />
@@ -447,14 +734,14 @@ function AddDisabled() {
               <h3 className="text-lg font-semibold">Contact Information</h3>
               <Input
                 label="Phone Number"
-                name="phoneNumber"
-                value={personDetails.phoneNumber}
+                name="phone_number"
+                value={personDetails.phone_number}
                 onChange={handleInputChange}
               />
               <Input
                 label="Secondary Phone (Optional)"
-                name="secondaryPhone"
-                value={personDetails.secondaryPhone}
+                name="second_phone_number"
+                value={personDetails.second_phone_number}
                 onChange={handleInputChange}
               />
               <Textarea
@@ -480,8 +767,8 @@ function AddDisabled() {
                   Disability Type
                 </label>
                 <select
-                  name="disabilityType"
-                  value={personDetails.disabilityType}
+                  name="disability_type"
+                  value={personDetails.disability_type}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
@@ -496,20 +783,20 @@ function AddDisabled() {
               </div>
               <Textarea
                 label="Disability Details"
-                name="disabilityDetails"
-                value={personDetails.disabilityDetails}
+                name="disability_description"
+                value={personDetails.disability_description}
                 onChange={handleInputChange}
               />
               <Textarea
                 label="Medical Conditions (Optional)"
-                name="medicalConditions"
-                value={personDetails.medicalConditions}
+                name="medical_condition"
+                value={personDetails.medical_condition}
                 onChange={handleInputChange}
               />
               <Input
-                label="Medications (Optional)"
-                name="medications"
-                value={personDetails.medications}
+                label="Additional Notes (Optional)"
+                name="special_needs"
+                value={personDetails.special_needs}
                 onChange={handleInputChange}
               />
 

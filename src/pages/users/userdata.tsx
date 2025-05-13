@@ -9,8 +9,6 @@ import {
   FiBriefcase,
   FiInfo,
   FiTag,
-  FiEye,
-  FiEyeOff,
   FiArrowLeft,
   FiAlertCircle,
   FiPhone,
@@ -18,11 +16,11 @@ import {
   FiFileText,
   FiActivity,
   FiTrash2,
+  FiEye,
 } from 'react-icons/fi';
 import {
   FaIdCard,
   FaUserTag,
-  FaPassport,
   FaFingerprint,
   FaCar,
 } from 'react-icons/fa';
@@ -95,14 +93,38 @@ interface User {
   brand_position: string | null;
 }
 
+// Add these color constants at the top of the file
+const SECTION_COLORS = {
+  child: {
+    gradient: 'from-amber-500/20 to-amber-500/10',
+    border: 'border-amber-500/30',
+    icon: 'text-amber-400',
+  },
+  disabled: {
+    gradient: 'from-purple-500/20 to-purple-500/10',
+    border: 'border-purple-500/30',
+    icon: 'text-purple-400',
+  },
+  man: {
+    gradient: 'from-blue-500/20 to-blue-500/10',
+    border: 'border-blue-500/30',
+    icon: 'text-blue-400',
+  },
+  woman: {
+    gradient: 'from-pink-500/20 to-pink-500/10',
+    border: 'border-pink-500/30',
+    icon: 'text-pink-400',
+  },
+};
+
 function Userdata() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isIdentityRevealed, setIsIdentityRevealed] = useState<boolean>(true);
-  const [showEmptyFields, setShowEmptyFields] = useState<boolean>(true);
+  const [isIdentityRevealed, ] = useState<boolean>(true);
+  const [showEmptyFields] = useState<boolean>(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
   useEffect(() => {
@@ -193,8 +215,13 @@ function Userdata() {
   };
 
   // Check if user is a child record
-  const isChildRecord =
-    user.form_type === 'child' || !!user.guardian_name || !!user.date_of_birth;
+  const isChildRecord = user.form_type === 'child';
+
+  // Check if user is a disabled person
+  const isDisabledPerson = user.form_type === 'disabled';
+
+  // Check if user is an adult/man
+  const isAdult = user.form_type === 'adult' || user.form_type === 'man';
 
   // Check if user has vehicle information
   const hasVehicleInfo =
@@ -214,13 +241,35 @@ function Userdata() {
     user.judgment ||
     user.accusation;
 
-  // Check if user has brand information
-  const hasBrandInfo =
-    user.brand_affiliation || user.brand_products || user.brand_position;
+  // Check if user has travel information
+  const hasTravelInfo =
+    user.travel_date ||
+    user.travel_destination ||
+    user.arrival_airport ||
+    user.arrival_date ||
+    user.flight_number ||
+    user.return_date;
 
-  // Toggle showing empty fields
-  const toggleEmptyFields = () => {
-    setShowEmptyFields(!showEmptyFields);
+  const getImageUrl = (
+    imagePath: string | null | undefined,
+    userName: string
+  ) => {
+    if (!imagePath) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
+    }
+
+    // Check if image_path already contains the full URL
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+
+    // If image_path doesn't contain 'uploads/' prefix, add it
+    const formattedPath = imagePath.includes('uploads/')
+      ? imagePath
+      : `uploads/${imagePath}`;
+
+    // Ensure we don't have double slashes in the URL
+    return `https://backend-fast-api-ai.fly.dev/${formattedPath.replace(/^\/?/, '')}`;
   };
 
   return (
@@ -234,13 +283,6 @@ function Userdata() {
           <FiArrowLeft className="inline mr-2" />
           Back to Search
         </Link>
-
-        <button
-          onClick={toggleEmptyFields}
-          className="px-6 py-2 bg-gray-600/30 text-white rounded-md hover:bg-gray-700/50 shadow-lg backdrop-blur-lg transition-all duration-300"
-        >
-          {showEmptyFields ? 'Hide Empty Fields' : 'Show All Fields'}
-        </button>
       </div>
 
       {/* User profile header */}
@@ -255,13 +297,9 @@ function Userdata() {
           <div className="w-28 h-28 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-lg border-2 border-white/30">
             {user.image_path ? (
               <img
-                src={`https://backend-fast-api-ai.fly.dev/${user.image_path}`}
+                src={getImageUrl(user.image_path, user.name)}
                 alt={user.name}
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
-                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -273,23 +311,9 @@ function Userdata() {
           <div className="text-center md:text-left flex-1">
             <div className="flex items-center justify-center md:justify-start">
               <h1 className="text-2xl font-bold text-white">
-                {isIdentityRevealed
-                  ? `${user.name} (${new Date().toLocaleString('default', { month: 'long' })})`
-                  : 'Anonymous User'}
+              {user.name}
               </h1>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setIsIdentityRevealed(!isIdentityRevealed)}
-                className="ml-2 p-2 rounded-full hover:bg-white/20 transition-colors"
-                title={isIdentityRevealed ? 'Hide Identity' : 'Reveal Identity'}
-              >
-                {isIdentityRevealed ? (
-                  <FiEyeOff size={18} className="text-white" />
-                ) : (
-                  <FiEye size={18} className="text-white" />
-                )}
-              </motion.button>
+             
             </div>
             <p className="text-white/70 mt-1">
               {user.form_type && (
@@ -345,7 +369,7 @@ function Userdata() {
                   <FiHash className="mr-2" /> ID:
                 </span>
                 <span className="text-white font-medium">
-                  {user.id.substring(0, 8)}...
+                  {user.id ? `${user.id.substring(0, 8)}...` : 'Not available'}
                 </span>
               </div>
 
@@ -354,7 +378,9 @@ function Userdata() {
                   <FiUser className="mr-2" /> Face ID:
                 </span>
                 <span className="text-white font-medium">
-                  {user.face_id.substring(0, 8)}...
+                  {user.face_id
+                    ? `${user.face_id.substring(0, 8)}...`
+                    : 'Not available'}
                 </span>
               </div>
 
@@ -413,64 +439,58 @@ function Userdata() {
             </div>
           </motion.div>
 
-          {/* Brand Information (if applicable or if showing all fields) */}
-          {(hasBrandInfo || showEmptyFields) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="bg-gradient-to-br from-indigo-500/20 to-indigo-500/10 backdrop-blur-md rounded-xl p-6 border border-indigo-500/30 shadow-lg"
-            >
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FiTag className="mr-3 text-indigo-400" size={22} />
-                Brand Information
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Brand Affiliation:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.brand_affiliation)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Brand Products:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.brand_products)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Position in Brand:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.brand_position)}
-                  </span>
-                </div>
-
-                {!hasBrandInfo && showEmptyFields && (
-                  <div className="col-span-2 text-center text-white/50 py-2">
-                    No brand information available
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Child Information (if applicable or if showing all fields) */}
-          {(isChildRecord || showEmptyFields) && (
+          {/* Child Information Section */}
+          {isChildRecord && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-amber-500/20 to-amber-500/10 backdrop-blur-md rounded-xl p-6 border border-amber-500/30 shadow-lg"
+              className={`bg-gradient-to-br ${SECTION_COLORS.child.gradient} backdrop-blur-md rounded-xl p-6 border ${SECTION_COLORS.child.border} shadow-lg`}
             >
               <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FaUserTag className="mr-3 text-amber-400" size={22} />
+                <FaUserTag
+                  className={`mr-3 ${SECTION_COLORS.child.icon}`}
+                  size={22}
+                />
                 Child Information
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Date of Birth:</span>
+                  <span className="text-white font-medium">
+                    {formatDate(user.date_of_birth)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Physical Description:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.physical_description)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Last Clothes:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.last_clothes)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Area of Disappearance:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.area_of_disappearance)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Last Seen Time:</span>
+                  <span className="text-white font-medium">
+                    {formatDate(user.last_seen_time)}
+                  </span>
+                </div>
+
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
                   <span className="text-white/70">Guardian Name:</span>
                   <span className="text-white font-medium">
@@ -491,262 +511,260 @@ function Userdata() {
                     {maskSensitiveInfo(user.guardian_id)}
                   </span>
                 </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Date of Birth:</span>
-                  <span className="text-white font-medium">
-                    {formatDate(user.date_of_birth)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Physical Description:</span>
-                  <span className="text-white font-medium">
-                    {user.physical_description || 'N/A'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Last Clothes:</span>
-                  <span className="text-white font-medium">
-                    {user.last_clothes || 'N/A'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Area of Disappearance:</span>
-                  <span className="text-white font-medium">
-                    {user.area_of_disappearance || 'N/A'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Last Seen Time:</span>
-                  <span className="text-white font-medium">
-                    {formatDate(user.last_seen_time)}
-                  </span>
-                </div>
-
-                {!isChildRecord && showEmptyFields && (
-                  <div className="col-span-2 text-center text-white/50 py-2">
-                    No child information available
-                  </div>
-                )}
               </div>
             </motion.div>
           )}
 
-          {/* Travel Information */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-gradient-to-br from-blue-500/20 to-blue-500/10 backdrop-blur-md rounded-xl p-6 border border-blue-500/30 shadow-lg"
-          >
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FiMap className="mr-3 text-blue-400" size={22} />
-              Travel Information
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {user.travel_destination ? (
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Destination:</span>
-                  <span className="text-white font-medium">
-                    {user.travel_destination}
-                  </span>
-                </div>
-              ) : null}
-
-              {user.travel_date ? (
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Travel Date:</span>
-                  <span className="text-white font-medium">
-                    {formatDate(user.travel_date)}
-                  </span>
-                </div>
-              ) : null}
-
-              {user.arrival_airport ? (
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Arrival Airport:</span>
-                  <span className="text-white font-medium">
-                    {user.arrival_airport}
-                  </span>
-                </div>
-              ) : null}
-
-              {user.arrival_date ? (
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Arrival Date:</span>
-                  <span className="text-white font-medium">
-                    {formatDate(user.arrival_date)}
-                  </span>
-                </div>
-              ) : null}
-
-              {user.flight_number ? (
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Flight Number:</span>
-                  <span className="text-white font-medium">
-                    {user.flight_number}
-                  </span>
-                </div>
-              ) : null}
-
-              {user.return_date ? (
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Return Date:</span>
-                  <span className="text-white font-medium">
-                    {formatDate(user.return_date)}
-                  </span>
-                </div>
-              ) : null}
-
-              {!user.travel_destination &&
-                !user.travel_date &&
-                !user.arrival_airport &&
-                !user.arrival_date &&
-                !user.flight_number &&
-                !user.return_date && (
-                  <div className="text-white/50 text-center py-4 col-span-2">
-                    No travel information available
-                  </div>
-                )}
-            </div>
-          </motion.div>
-
-          {/* Case Information (if applicable) */}
-          {hasCaseInfo && (
+          {/* Disabled Person Information Section */}
+          {isDisabledPerson && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-red-500/20 backdrop-blur-md rounded-xl p-6 border border-red-500/30 shadow-lg"
+              transition={{ delay: 0.25 }}
+              className={`bg-gradient-to-br ${SECTION_COLORS.disabled.gradient} backdrop-blur-md rounded-xl p-6 border ${SECTION_COLORS.disabled.border} shadow-lg`}
             >
               <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FiAlertCircle className="mr-2" />
-                Case Information
+                <FiInfo
+                  className={`mr-3 ${SECTION_COLORS.disabled.icon}`}
+                  size={22}
+                />
+                Disability Information
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {user.has_criminal_record === 1 && (
-                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white/70">Criminal Record:</span>
-                    <span className="text-white font-medium">Yes</span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Disability Type:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.disability_type)}
+                  </span>
+                </div>
 
-                {user.case_details && (
-                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white/70">Case Details:</span>
-                    <span className="text-white font-medium">
-                      {maskSensitiveInfo(user.case_details)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Disability Description:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.disability_description)}
+                  </span>
+                </div>
 
-                {user.police_station && (
-                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white/70">Police Station:</span>
-                    <span className="text-white font-medium">
-                      {maskSensitiveInfo(user.police_station)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Medical Condition:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.medical_condition)}
+                  </span>
+                </div>
 
-                {user.case_number && (
-                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white/70">Case Number:</span>
-                    <span className="text-white font-medium">
-                      {maskSensitiveInfo(user.case_number)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Special Needs:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.special_needs)}
+                  </span>
+                </div>
 
-                {user.judgment && (
-                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white/70">Judgment:</span>
-                    <span className="text-white font-medium">
-                      {maskSensitiveInfo(user.judgment)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Emergency Contact:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.emergency_contact)}
+                  </span>
+                </div>
 
-                {user.accusation && (
-                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white/70">Accusation:</span>
-                    <span className="text-white font-medium">
-                      {maskSensitiveInfo(user.accusation)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                  <span className="text-white/70">Emergency Phone:</span>
+                  <span className="text-white font-medium">
+                    {maskSensitiveInfo(user.emergency_phone)}
+                  </span>
+                </div>
               </div>
             </motion.div>
           )}
 
-          {/* Vehicle Information Section */}
-          {(user.license_plate ||
-            user.vehicle_model ||
-            user.vehicle_color ||
-            user.chassis_number ||
-            user.vehicle_number ||
-            showEmptyFields) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-green-500/20 to-green-500/10 backdrop-blur-md rounded-xl p-6 border border-green-500/30 shadow-lg"
-            >
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FaCar className="mr-3 text-green-400" size={22} />
-                Vehicle Information
-              </h2>
+          {/* Adult/Man Information Section */}
+          {isAdult && (
+            <>
+              {/* Vehicle Information */}
+              {hasVehicleInfo && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className={`bg-gradient-to-br ${user.form_type === 'woman' ? SECTION_COLORS.woman.gradient : SECTION_COLORS.man.gradient} backdrop-blur-md rounded-xl p-6 border ${user.form_type === 'woman' ? SECTION_COLORS.woman.border : SECTION_COLORS.man.border} shadow-lg`}
+                >
+                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <FaCar
+                      className={`mr-3 ${user.form_type === 'woman' ? SECTION_COLORS.woman.icon : SECTION_COLORS.man.icon}`}
+                      size={22}
+                    />
+                    Vehicle Information
+                  </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">License Plate:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.license_plate || 'N/A')}
-                  </span>
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">License Plate:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.license_plate)}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Vehicle Model:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.vehicle_model || 'N/A')}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Vehicle Model:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.vehicle_model)}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Vehicle Color:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.vehicle_color || 'N/A')}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Vehicle Color:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.vehicle_color)}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Chassis Number:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.chassis_number || 'N/A')}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Chassis Number:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.chassis_number)}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Vehicle Number:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.vehicle_number || 'N/A')}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Vehicle Number:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.vehicle_number)}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">License Expiration:</span>
-                  <span className="text-white font-medium">
-                    {formatDate(user.license_expiration) || 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">License Expiration:</span>
+                      <span className="text-white font-medium">
+                        {formatDate(user.license_expiration)}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Travel Information */}
+              {hasTravelInfo && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className={`bg-gradient-to-br ${user.form_type === 'woman' ? SECTION_COLORS.woman.gradient : SECTION_COLORS.man.gradient} backdrop-blur-md rounded-xl p-6 border ${user.form_type === 'woman' ? SECTION_COLORS.woman.border : SECTION_COLORS.man.border} shadow-lg`}
+                >
+                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <FiMap
+                      className={`mr-3 ${user.form_type === 'woman' ? SECTION_COLORS.woman.icon : SECTION_COLORS.man.icon}`}
+                      size={22}
+                    />
+                    Travel Information
+                  </h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Travel Date:</span>
+                      <span className="text-white font-medium">
+                        {formatDate(user.travel_date)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Travel Destination:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.travel_destination)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Arrival Airport:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.arrival_airport)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Arrival Date:</span>
+                      <span className="text-white font-medium">
+                        {formatDate(user.arrival_date)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Flight Number:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.flight_number)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Return Date:</span>
+                      <span className="text-white font-medium">
+                        {formatDate(user.return_date)}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Case Information */}
+              {hasCaseInfo && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-red-500/20 backdrop-blur-md rounded-xl p-6 border border-red-500/30 shadow-lg"
+                >
+                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <FiAlertCircle className="mr-2" />
+                    Case Information
+                  </h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">
+                        Has Criminal Record:
+                      </span>
+                      <span className="text-white font-medium">
+                        {user.has_criminal_record === 1 ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Case Details:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.case_details)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Police Station:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.police_station)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Case Number:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.case_number)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Judgment:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.judgment)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white/70">Accusation:</span>
+                      <span className="text-white font-medium">
+                        {maskSensitiveInfo(user.accusation)}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </>
           )}
 
           {/* Additional Data (if applicable) */}
@@ -767,71 +785,6 @@ function Userdata() {
                 <span className="text-white font-medium">
                   {maskSensitiveInfo(user.additional_data)}
                 </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Disabled Person Information (if applicable) */}
-          {(user.disability_type ||
-            user.disability_description ||
-            user.medical_condition ||
-            user.special_needs ||
-            user.emergency_contact ||
-            user.emergency_phone ||
-            showEmptyFields) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="bg-gradient-to-br from-purple-500/20 to-purple-500/10 backdrop-blur-md rounded-xl p-6 border border-purple-500/30 shadow-lg"
-            >
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FiInfo className="mr-3 text-purple-400" size={22} />
-                Disability Information
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Disability Type:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.disability_type || 'N/A')}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Disability Description:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.disability_description || 'N/A')}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Medical Condition:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.medical_condition || 'N/A')}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Special Needs:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.special_needs || 'N/A')}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Emergency Contact:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.emergency_contact || 'N/A')}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Emergency Phone:</span>
-                  <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.emergency_phone || 'N/A')}
-                  </span>
-                </div>
               </div>
             </motion.div>
           )}
@@ -948,112 +901,7 @@ function Userdata() {
             </div>
           </motion.div>
 
-          {/* Passport Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="bg-gradient-to-br from-purple-500/20 to-purple-500/10 backdrop-blur-md rounded-xl p-6 border border-purple-500/30 shadow-lg"
-          >
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FaPassport className="mr-3 text-purple-400" size={22} />
-              Passport Information
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Passport Number:</span>
-                <span className="text-white font-medium">N/A</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Issue Date:</span>
-                <span className="text-white font-medium">N/A</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Expiry Date:</span>
-                <span className="text-white font-medium">N/A</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Issuing Country:</span>
-                <span className="text-white font-medium">N/A</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Place of Issue:</span>
-                <span className="text-white font-medium">N/A</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Visa Status:</span>
-                <span className="text-white font-medium">N/A</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Criminal Record Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-gradient-to-br from-red-500/20 to-red-500/10 backdrop-blur-md rounded-xl p-6 border border-red-500/30 shadow-lg"
-          >
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FiAlertCircle className="mr-3 text-red-400" size={22} />
-              Criminal Record
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Has Criminal Record:</span>
-                <span className="text-white font-medium">
-                  {user.has_criminal_record === 1 ? 'Yes' : 'No'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Case Number:</span>
-                <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.case_number || 'N/A')}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Accusation:</span>
-                <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.accusation || 'N/A')}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Police Station:</span>
-                <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.police_station || 'N/A')}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Judgment:</span>
-                <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.judgment || 'N/A')}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Case Details:</span>
-                <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.case_details || 'N/A')}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg col-span-2">
-                <span className="text-white/70">Status:</span>
-                <span className="text-white font-medium">N/A</span>
-              </div>
-            </div>
-          </motion.div>
+         
         </div>
 
         {/* Right column - Actions and Identity Verification */}

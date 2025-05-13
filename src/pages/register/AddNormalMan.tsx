@@ -7,31 +7,38 @@ import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import Webcam from 'react-webcam';
 import { toast } from 'react-hot-toast';
 import SectionButtons from '../../components/SectionButtons';
+import {
+  sectionVariants,
+  successVariants,
+  errorVariants,
+  transition,
+} from '../../config/animations';
+import type { TelecomCompany } from '../../config/types';
+import { registrationApi } from '../../services/api';
 
-interface PersonalInfo {
+interface FormData {
+  // Common fields for all forms
   name: string;
   nickname: string;
   dob: string;
   national_id: string;
-  category: string;
-}
-
-interface ContactInfo {
+  address: string;
   phone_number: string;
-  phone_company: string;
-  second_phone_number: string;
-}
+  job: string;
+  phone_company: TelecomCompany;
+  second_phone_number?: string;
+  category: string;
+  form_type: string;
 
-interface CriminalRecord {
+  // Criminal record
   has_criminal_record: boolean;
   case_details: string;
   police_station: string;
   case_number: string;
   judgment: string;
   accusation: string;
-}
 
-interface VehicleInfo {
+  // Vehicle info
   has_motorcycle: boolean;
   license_plate: string;
   vehicle_model: string;
@@ -39,80 +46,54 @@ interface VehicleInfo {
   chassis_number: string;
   vehicle_number: string;
   license_expiration: string;
-}
 
-interface TravelInfo {
+  // Travel info
   travel_date: string;
   travel_destination: string;
   arrival_airport: string;
   arrival_date: string;
   flight_number: string;
   return_date: string;
-}
 
-interface FormData {
-  personalInfo: PersonalInfo;
-  contactInfo: ContactInfo;
-  criminalRecord: CriminalRecord;
-  vehicleInfo: VehicleInfo;
-  travelInfo: TravelInfo;
+  // Image handling
   image: File | null;
   useCamera: boolean;
-  disability_type?: string;
-  disability_description?: string;
-  medical_condition?: string;
-  special_needs?: string;
-  emergency_contact?: string;
-  emergency_phone?: string;
-  form_type: string;
 }
 
 const initialFormData: FormData = {
-  personalInfo: {
-    name: '',
-    nickname: '',
-    dob: '',
-    national_id: '',
-    category: '',
-  },
-  contactInfo: {
-    phone_number: '',
-    phone_company: '',
-    second_phone_number: '',
-  },
-  criminalRecord: {
-    has_criminal_record: false,
-    case_details: '',
-    police_station: '',
-    case_number: '',
-    judgment: '',
-    accusation: '',
-  },
-  vehicleInfo: {
-    has_motorcycle: false,
-    license_plate: '',
-    vehicle_model: '',
-    vehicle_color: '',
-    chassis_number: '',
-    vehicle_number: '',
-    license_expiration: '',
-  },
-  travelInfo: {
-    travel_date: '',
-    travel_destination: '',
-    arrival_airport: '',
-    arrival_date: '',
-    flight_number: '',
-    return_date: '',
-  },
+  name: '',
+  nickname: '',
+  dob: '',
+  national_id: '',
+  address: '',
+  phone_number: '',
+  job: '',
+  phone_company: '',
+  second_phone_number: '',
+  category: 'male',
+  form_type: 'man',
+  has_criminal_record: false,
+  case_details: '',
+  police_station: '',
+  case_number: '',
+  judgment: '',
+  accusation: '',
+  has_motorcycle: false,
+  license_plate: '',
+  vehicle_model: '',
+  vehicle_color: '',
+  chassis_number: '',
+  vehicle_number: '',
+  license_expiration: '',
+  travel_date: '',
+  travel_destination: '',
+  arrival_airport: '',
+  arrival_date: '',
+  flight_number: '',
+  return_date: '',
   image: null,
   useCamera: false,
-  form_type: 'adult',
-  
 };
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://backend-fast-api-ai.fly.dev';
 
 const AddNormalMan = () => {
   const [currentSection, setCurrentSection] = useState(1);
@@ -123,7 +104,6 @@ const AddNormalMan = () => {
   const [, setUploadedImagePreview] = useState<string | null>(null);
   const webcamRef = useRef<Webcam>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const validateForm = () => {
@@ -132,16 +112,16 @@ const AddNormalMan = () => {
     // Validate based on current section
     if (currentSection === 1) {
       // Personal Info validation
-      if (!formData.personalInfo.name.trim()) {
+      if (!formData.name.trim()) {
         errors.push('Name is required');
-      } else if (formData.personalInfo.name.length < 2) {
+      } else if (formData.name.length < 2) {
         errors.push('Name must be at least 2 characters long');
       }
 
-      if (!formData.personalInfo.dob) {
+      if (!formData.dob) {
         errors.push('Date of Birth is required');
       } else {
-        const dob = new Date(formData.personalInfo.dob);
+        const dob = new Date(formData.dob);
         const today = new Date();
         const age = today.getFullYear() - dob.getFullYear();
         if (age < 18) {
@@ -152,59 +132,59 @@ const AddNormalMan = () => {
         }
       }
 
-      if (!formData.personalInfo.national_id.trim()) {
+      if (!formData.national_id.trim()) {
         errors.push('National ID is required');
-      } else if (!/^\d{10}$/.test(formData.personalInfo.national_id)) {
+      } else if (!/^\d{10}$/.test(formData.national_id)) {
         errors.push('National ID must be 10 digits');
       }
 
-      if (!formData.personalInfo.category.trim()) {
+      if (!formData.category.trim()) {
         errors.push('Category is required');
       }
     } else if (currentSection === 2) {
       // Contact Info validation
-      if (!formData.contactInfo.phone_number.trim()) {
+      if (!formData.phone_number.trim()) {
         errors.push('Phone Number is required');
-      } else if (!/^\d{10}$/.test(formData.contactInfo.phone_number)) {
+      } else if (!/^\d{10}$/.test(formData.phone_number)) {
         errors.push('Phone Number must be 10 digits');
       }
 
-      if (!formData.contactInfo.phone_company.trim()) {
-        errors.push('Phone Company is required');
+      if (!formData.phone_company) {
+        errors.push('Telecom Company is required');
       }
 
       if (
-        formData.contactInfo.second_phone_number &&
-        !/^\d{10}$/.test(formData.contactInfo.second_phone_number)
+        formData.second_phone_number &&
+        !/^\d{10}$/.test(formData.second_phone_number)
       ) {
         errors.push('Second Phone Number must be 10 digits');
       }
     } else if (currentSection === 3) {
       // Criminal record validation
-      if (formData.criminalRecord.has_criminal_record) {
-        if (!formData.criminalRecord.case_details.trim()) {
+      if (formData.has_criminal_record) {
+        if (!formData.case_details.trim()) {
           errors.push('Case Details are required when criminal record exists');
         }
-        if (!formData.criminalRecord.police_station.trim()) {
+        if (!formData.police_station.trim()) {
           errors.push('Police Station is required when criminal record exists');
         }
-        if (!formData.criminalRecord.case_number.trim()) {
+        if (!formData.case_number.trim()) {
           errors.push('Case Number is required when criminal record exists');
         }
       }
     } else if (currentSection === 4) {
       // Vehicle info validation
-      if (formData.vehicleInfo.has_motorcycle) {
-        if (!formData.vehicleInfo.license_plate.trim()) {
+      if (formData.has_motorcycle) {
+        if (!formData.license_plate.trim()) {
           errors.push('License Plate is required for motorcycle');
         }
-        if (!formData.vehicleInfo.vehicle_model.trim()) {
+        if (!formData.vehicle_model.trim()) {
           errors.push('Vehicle Model is required for motorcycle');
         }
-        if (!formData.vehicleInfo.license_expiration) {
+        if (!formData.license_expiration) {
           errors.push('License Expiration Date is required for motorcycle');
         } else {
-          const expDate = new Date(formData.vehicleInfo.license_expiration);
+          const expDate = new Date(formData.license_expiration);
           const today = new Date();
           if (expDate < today) {
             errors.push('License has expired');
@@ -247,40 +227,34 @@ const AddNormalMan = () => {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
-    const { name, value, checked } = e.target as HTMLInputElement;
-
-    if (name === 'hasMotorcycle') {
-      setFormData((prev) => ({
-        ...prev,
-        vehicleInfo: {
-          ...prev.vehicleInfo,
-          has_motorcycle: checked,
-        },
-      }));
-    } else if (name.includes('.')) {
-      // Handle nested properties
+    const { name, value } = e.target;
+    if (name.includes('.')) {
       const [section, field] = name.split('.');
       setFormData((prev) => ({
         ...prev,
         [section]: {
-          ...(prev[section as keyof typeof prev] as object),
+          ...(prev[section as keyof FormData] as unknown as {
+            [key: string]: string | number | boolean | null | File;
+          }),
           [field]: value,
         },
       }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
   };
 
   const handleToggleCriminalRecord = () => {
     setFormData((prev) => ({
       ...prev,
-      criminalRecord: {
-        ...prev.criminalRecord,
-        has_criminal_record: !prev.criminalRecord.has_criminal_record,
-      },
+      has_criminal_record: !prev.has_criminal_record,
     }));
   };
 
@@ -357,202 +331,109 @@ const AddNormalMan = () => {
     }
   };
 
-  // Enhanced form submission with better error handling
+  // Enhanced form submission with better error handling and face_id retry
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
-    setError(null);
 
     try {
-      // Create FormData for the registration
+      // Create FormData object
       const formDataToSend = new FormData();
 
-      // Add image data
+      // Pass individual form fields as expected by the API
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('form_type', 'man');
+      formDataToSend.append('bypass_angle_check', 'false');
+      formDataToSend.append('train_multiple', 'true');
+
+      // Convert boolean values to "1"/"0" strings for proper backend processing
+      formDataToSend.append(
+        'has_criminal_record',
+        formData.has_criminal_record ? '1' : '0'
+      );
+      formDataToSend.append(
+        'has_motorcycle',
+        formData.has_motorcycle ? '1' : '0'
+      );
+
+      // Create a complete user data object and append as JSON
+      const userData = {
+        name: formData.name,
+        nickname: formData.nickname || formData.name.split(' ')[0] || '',
+        dob: formData.dob,
+        date_of_birth: formData.dob,
+        national_id: formData.national_id,
+        address: formData.address || '',
+        phone_number: formData.phone_number,
+        phone_company: formData.phone_company,
+        second_phone_number: formData.second_phone_number || '',
+        category: 'male',
+        form_type: 'man',
+        employee_id: '',
+        department: '',
+        role: '',
+        job: formData.job || '',
+        occupation: formData.job || '',
+        has_criminal_record: formData.has_criminal_record ? '1' : '0',
+        case_details: formData.case_details || '',
+        police_station: formData.police_station || '',
+        case_number: formData.case_number || '',
+        judgment: formData.judgment || '',
+        accusation: formData.accusation || '',
+        has_motorcycle: formData.has_motorcycle ? '1' : '0',
+        license_plate: formData.license_plate || '',
+        vehicle_model: formData.vehicle_model || '',
+        vehicle_color: formData.vehicle_color || '',
+        chassis_number: formData.chassis_number || '',
+        vehicle_number: formData.vehicle_number || '',
+        license_expiration: formData.license_expiration || '',
+        travel_date: formData.travel_date || '',
+        travel_destination: formData.travel_destination || '',
+        arrival_airport: formData.arrival_airport || '',
+        arrival_date: formData.arrival_date || '',
+        flight_number: formData.flight_number || '',
+        return_date: formData.return_date || '',
+      };
+
+      // Append the complete user data as JSON and log for debugging
+      formDataToSend.append('user_data', JSON.stringify(userData));
+      console.log('Complete user_data JSON being sent:', userData);
+
+      // Make sure image is handled correctly
       if (formData.image) {
         formDataToSend.append('file', formData.image);
       } else if (capturedImage) {
-        const response = await fetch(capturedImage);
-        const blob = await response.blob();
-        formDataToSend.append('file', blob, 'captured.jpg');
+        // Convert base64 to file if using webcam
+        const blob = await (await fetch(capturedImage)).blob();
+        const file = new File([blob], 'webcam_image.jpg', {
+          type: 'image/jpeg',
+        });
+        formDataToSend.append('file', file);
       } else {
-        throw new Error('No image provided');
+        throw new Error('Please provide an image');
       }
 
-      // Add required fields
-      formDataToSend.append('name', formData.personalInfo.name);
-      formDataToSend.append('form_type', formData.form_type);
+      const responseData = await registrationApi.registerUser(formDataToSend);
 
-      // Add contact info
-      formDataToSend.append('phone_number', formData.contactInfo.phone_number);
-      formDataToSend.append(
-        'phone_company',
-        formData.contactInfo.phone_company
-      );
-      if (formData.contactInfo.second_phone_number) {
-        formDataToSend.append(
-          'second_phone_number',
-          formData.contactInfo.second_phone_number
-        );
-      }
+      // Handle successful registration
+      setSubmitSuccess(true);
+      const userName = responseData?.user?.name || formData.name;
+      toast.success(`${userName} registered successfully!`);
 
-      // Add vehicle info
-      if (formData.vehicleInfo.vehicle_model) {
-        formDataToSend.append(
-          'vehicle_model',
-          formData.vehicleInfo.vehicle_model
-        );
-      }
-      if (formData.vehicleInfo.vehicle_number) {
-        formDataToSend.append(
-          'vehicle_number',
-          formData.vehicleInfo.vehicle_number
-        );
-      }
-      if (formData.vehicleInfo.license_plate) {
-        formDataToSend.append(
-          'license_plate',
-          formData.vehicleInfo.license_plate
-        );
-      }
-      if (formData.vehicleInfo.vehicle_color) {
-        formDataToSend.append(
-          'vehicle_color',
-          formData.vehicleInfo.vehicle_color
-        );
-      }
-      if (formData.vehicleInfo.license_expiration) {
-        formDataToSend.append(
-          'license_expiration',
-          formData.vehicleInfo.license_expiration
-        );
-      }
-      if (formData.vehicleInfo.chassis_number) {
-        formDataToSend.append(
-          'chassis_number',
-          formData.vehicleInfo.chassis_number
-        );
-      }
-
-      // Add criminal record info
-      formDataToSend.append(
-        'has_criminal_record',
-        formData.criminalRecord.has_criminal_record.toString()
-      );
-      if (formData.criminalRecord.has_criminal_record) {
-        if (formData.criminalRecord.case_details) {
-          formDataToSend.append(
-            'case_details',
-            formData.criminalRecord.case_details
-          );
-        }
-        if (formData.criminalRecord.police_station) {
-          formDataToSend.append(
-            'police_station',
-            formData.criminalRecord.police_station
-          );
-        }
-        if (formData.criminalRecord.case_number) {
-          formDataToSend.append(
-            'case_number',
-            formData.criminalRecord.case_number
-          );
-        }
-        if (formData.criminalRecord.judgment) {
-          formDataToSend.append('judgment', formData.criminalRecord.judgment);
-        }
-        if (formData.criminalRecord.accusation) {
-          formDataToSend.append(
-            'accusation',
-            formData.criminalRecord.accusation
-          );
-        }
-      }
-
-      // Add travel info
-      if (formData.travelInfo.travel_date) {
-        formDataToSend.append('travel_date', formData.travelInfo.travel_date);
-      }
-      if (formData.travelInfo.travel_destination) {
-        formDataToSend.append(
-          'travel_destination',
-          formData.travelInfo.travel_destination
-        );
-      }
-      if (formData.travelInfo.arrival_airport) {
-        formDataToSend.append(
-          'arrival_airport',
-          formData.travelInfo.arrival_airport
-        );
-      }
-      if (formData.travelInfo.arrival_date) {
-        formDataToSend.append('arrival_date', formData.travelInfo.arrival_date);
-      }
-      if (formData.travelInfo.flight_number) {
-        formDataToSend.append(
-          'flight_number',
-          formData.travelInfo.flight_number
-        );
-      }
-      if (formData.travelInfo.return_date) {
-        formDataToSend.append('return_date', formData.travelInfo.return_date);
-      }
-
-      // Log the request URL and form data for debugging
-      console.log('Sending request to:', `${API_BASE_URL}/api/register/upload`);
-      console.log('Form data entries:');
-      for (const pair of formDataToSend.entries()) {
-        console.log(`${pair[0]}: ${pair[1]}`);
-      }
-
-      // Send registration request
-      const response = await fetch(`${API_BASE_URL}/api/register/upload`, {
-        method: 'POST',
-        body: formDataToSend,
-      });
-
-      // Log the response status and headers for debugging
-      console.log('Response status:', response.status);
-      console.log(
-        'Response headers:',
-        Object.fromEntries(response.headers.entries())
-      );
-
-      const data = await response.json();
-      console.log('Response data:', data);
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || `Registration failed with status ${response.status}`
-        );
-      }
-
-      if (data.status === 'success') {
-        setSubmitSuccess(true);
-        toast.success('Registration successful!');
-
-        // Reset form data and state
-        setFormData(initialFormData);
-        setCapturedImage(null);
-        setUploadedImage(null);
-        setUploadedImagePreview(null);
-        setCurrentSection(1);
-        setFormErrors([]);
-
-        // Reset success state after 2 seconds
-        setTimeout(() => {
-          setSubmitSuccess(false);
-        }, 2000);
-      } else {
-        throw new Error(data.message || 'Registration failed');
-      }
+      // Additional verification or processing can go here
     } catch (err) {
       console.error('Registration error:', err);
       const errorMessage =
         err instanceof Error
           ? err.message
           : 'An error occurred during registration';
-      setError(errorMessage);
       toast.error(errorMessage);
+      setFormErrors([errorMessage]);
     } finally {
       setLoading(false);
     }
@@ -570,6 +451,57 @@ const AddNormalMan = () => {
   const retakePhoto = () => {
     setCapturedImage(null);
   };
+
+  // Success animation component
+  const SuccessAnimation = () => (
+    <motion.div
+      variants={successVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={transition}
+      className="max-w-2xl mx-auto bg-green-500/20 backdrop-blur-lg p-8 rounded-2xl shadow-lg border border-green-300/30 text-white"
+    >
+      <motion.div
+        className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-10 w-10 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </motion.div>
+      <h3 className="text-3xl font-bold text-white mb-2 text-center">
+        Registration Successful!
+      </h3>
+      <p className="text-white/80 mb-6 text-center">
+        User has been registered successfully.
+      </p>
+      <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+        <motion.div
+          className="bg-green-500 h-2 rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: '100%' }}
+          transition={{ duration: 2.5, ease: 'linear' }}
+        />
+      </div>
+      <p className="text-center mt-4 text-white/70">
+        Starting new registration in a moment...
+      </p>
+    </motion.div>
+  );
 
   return (
     <div className="p-6">
@@ -592,33 +524,35 @@ const AddNormalMan = () => {
         Back to Home
       </Link>
 
-      {/* Form Progress Indicator */}
-      <div className="flex justify-center mt-6">
-        <div className="flex items-center space-x-4">
-          {[1, 2, 3, 4, 5].map((step, idx) => (
-            <React.Fragment key={step}>
-              {idx > 0 && (
-                <div className="w-16 h-1 bg-gray-300">
-                  <div
-                    className={`h-full ${currentSection >= step ? 'bg-blue-600' : 'bg-gray-300'}`}
-                  ></div>
+      {/* Form Progress Indicator - Hide when showing success */}
+      {!submitSuccess && (
+        <div className="flex justify-center mt-6">
+          <div className="flex items-center space-x-4">
+            {[1, 2, 3, 4, 5].map((step, idx) => (
+              <React.Fragment key={step}>
+                {idx > 0 && (
+                  <div className="w-16 h-1 bg-gray-300">
+                    <div
+                      className={`h-full ${currentSection >= step ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    ></div>
+                  </div>
+                )}
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    currentSection === step
+                      ? 'bg-blue-600 text-white scale-110'
+                      : currentSection > step
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {step}
                 </div>
-              )}
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                  currentSection === step
-                    ? 'bg-blue-600 text-white scale-110'
-                    : currentSection > step
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700'
-                }`}
-              >
-                {step}
-              </div>
-            </React.Fragment>
-          ))}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <motion.form
         onSubmit={handleFormSubmit}
@@ -633,7 +567,14 @@ const AddNormalMan = () => {
 
         {/* Display form errors */}
         {formErrors.length > 0 && (
-          <div className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4">
+          <motion.div
+            variants={errorVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={transition}
+            className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4"
+          >
             <ul className="list-disc pl-5">
               {formErrors.map((error, index) => (
                 <li key={index} className="text-red-200">
@@ -641,494 +582,457 @@ const AddNormalMan = () => {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
         )}
 
         {/* Success message */}
-        {submitSuccess && (
-          <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <motion.div
-              className="bg-white/20 backdrop-blur-lg p-8 rounded-2xl border border-white/30 text-center max-w-md mx-4"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
+        {submitSuccess ? (
+          <SuccessAnimation />
+        ) : (
+          <>
+            {/* Sections */}
+            {currentSection === 1 && (
               <motion.div
-                className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2 }}
+                initial={{ x: -30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="space-y-4"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <Input
+                  label="Name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Nickname"
+                  name="nickname"
+                  value={formData.nickname}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Date of Birth"
+                  name="dob"
+                  type="date"
+                  value={formData.dob}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="National ID"
+                  name="national_id"
+                  value={formData.national_id}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Job"
+                  name="job"
+                  value={formData.job}
+                  onChange={handleInputChange}
+                />
+                <SectionButtons onNext={nextSection} />
               </motion.div>
-              <h3 className="text-2xl font-bold text-white mb-2">
-                Registration Successful!
-              </h3>
-              <p className="text-white/80 mb-6">
-                Redirecting to user profile...
-              </p>
-              <div className="w-full bg-white/20 rounded-full h-2">
-                <motion.div
-                  className="bg-green-500 h-2 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 2, ease: 'linear' }}
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* Sections */}
-        {currentSection === 1 && (
-          <motion.div
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="space-y-4"
-          >
-            <Input
-              label="Name"
-              name="personalInfo.name"
-              value={formData.personalInfo.name}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Nickname"
-              name="personalInfo.nickname"
-              value={formData.personalInfo.nickname || ''}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Date of Birth"
-              name="personalInfo.dob"
-              type="date"
-              value={formData.personalInfo.dob}
-              onChange={handleInputChange}
-            />
-
-            <Input
-              label="National ID"
-              name="personalInfo.national_id"
-              value={formData.personalInfo.national_id}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Category"
-              name="personalInfo.category"
-              value={formData.personalInfo.category}
-              onChange={handleInputChange}
-            />
-            <SectionButtons onNext={nextSection} />
-          </motion.div>
-        )}
-
-        {currentSection === 2 && (
-          <motion.div
-            initial={{ x: 30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="space-y-4"
-          >
-            <Input
-              label="Phone Number"
-              name="contactInfo.phone_number"
-              value={formData.contactInfo.phone_number}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Phone Company"
-              name="contactInfo.phone_company"
-              value={formData.contactInfo.phone_company}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Second Phone Number (Optional)"
-              name="contactInfo.second_phone_number"
-              value={formData.contactInfo.second_phone_number || ''}
-              onChange={handleInputChange}
-            />
-            <SectionButtons onPrev={prevSection} onNext={nextSection} />
-          </motion.div>
-        )}
-
-        {currentSection === 3 && (
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center space-x-4">
-              <input
-                type="checkbox"
-                checked={formData.criminalRecord.has_criminal_record}
-                onChange={handleToggleCriminalRecord}
-                className="h-5 w-5"
-              />
-              <label>Has Criminal Record</label>
-            </div>
-            {formData.criminalRecord.has_criminal_record && (
-              <>
-                <Input
-                  label="Case Details"
-                  name="criminalRecord.case_details"
-                  value={formData.criminalRecord.case_details}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label="Police Station"
-                  name="criminalRecord.police_station"
-                  value={formData.criminalRecord.police_station}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label="Case Number"
-                  name="criminalRecord.case_number"
-                  value={formData.criminalRecord.case_number}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label="Judgment"
-                  name="criminalRecord.judgment"
-                  value={formData.criminalRecord.judgment}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label="Accusation"
-                  name="criminalRecord.accusation"
-                  value={formData.criminalRecord.accusation}
-                  onChange={handleInputChange}
-                />
-              </>
             )}
-            <SectionButtons onPrev={prevSection} onNext={nextSection} />
-          </motion.div>
-        )}
 
-        {currentSection === 4 && (
-          <motion.div
-            initial={{ x: 30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="space-y-4 "
-          >
-            <Input
-              label="Vehicle"
-              name="vehicleInfo.vehicle_model"
-              value={formData.vehicleInfo.vehicle_model}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Traffic Department"
-              name="vehicleInfo.vehicle_number"
-              value={formData.vehicleInfo.vehicle_number}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="License Plate"
-              name="vehicleInfo.license_plate"
-              value={formData.vehicleInfo.license_plate}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Color"
-              name="vehicleInfo.vehicle_color"
-              value={formData.vehicleInfo.vehicle_color}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="License Expiration Date"
-              type="date"
-              name="vehicleInfo.license_expiration"
-              value={formData.vehicleInfo.license_expiration}
-              onChange={handleInputChange}
-            />
-            <Input
-              label="Manufacture Year"
-              name="vehicleInfo.chassis_number"
-              value={formData.vehicleInfo.chassis_number}
-              onChange={handleInputChange}
-            />
-
-            <SectionButtons onPrev={prevSection} onNext={nextSection} />
-          </motion.div>
-        )}
-
-        {currentSection === 5 && (
-          <motion.div
-            initial={{ x: 30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="space-y-4"
-          >
-            {/* Toggle between upload and camera capture */}
-            <div className="flex items-center space-x-4 mb-4">
-              <button
-                type="button"
-                onClick={handleToggleCamera}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            {currentSection === 2 && (
+              <motion.div
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={transition}
+                className="space-y-4"
               >
-                {formData.useCamera ? 'Switch to Upload' : 'Switch to Capture'}
-              </button>
-              <div>
-                {formData.useCamera ? (
-                  <FaCamera className="text-white text-2xl" />
-                ) : (
-                  <FaUpload className="text-white text-2xl" />
-                )}
-              </div>
-            </div>
-
-            {/* Upload image option */}
-            {!formData.useCamera ? (
-              <div className="flex flex-col items-center">
-                <label className="block text-white font-semibold mb-2">
-                  Upload Image
-                </label>
-                <div
-                  className="cursor-pointer"
-                  onClick={() => document.getElementById('fileInput')?.click()}
-                >
-                  <AnimatedFaceIcon size="md" text="Click to upload" />
-                </div>
-                <input
-                  id="fileInput"
-                  type="file"
-                  name="image"
-                  onChange={handleFileChange}
-                  accept="image/jpeg,image/png"
-                  className="hidden"
+                <h3 className="text-lg font-semibold">Contact Information</h3>
+                <Input
+                  label="Phone Number"
+                  name="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleInputChange}
                 />
-              </div>
-            ) : (
-              // Camera capture section
-              <div className="flex flex-col items-center text-white">
-                {!capturedImage ? (
+                <div>
+                  <label className="block font-medium mb-1">
+                    Telecom Company
+                  </label>
+                  <select
+                    name="phone_company"
+                    value={formData.phone_company}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 bg-black/30 border border-black/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Company</option>
+                    <option value="Orange">Orange</option>
+                    <option value="Etisalat">Etisalat</option>
+                    <option value="Vodafone">Vodafone</option>
+                    <option value="WE">WE</option>
+                  </select>
+                </div>
+                <Input
+                  label="Secondary Phone (Optional)"
+                  name="second_phone_number"
+                  value={formData.second_phone_number || ''}
+                  onChange={handleInputChange}
+                />
+                <SectionButtons onPrev={prevSection} onNext={nextSection} />
+              </motion.div>
+            )}
+
+            {currentSection === 3 && (
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center space-x-4">
+                  <input
+                    type="checkbox"
+                    checked={formData.has_criminal_record}
+                    onChange={handleToggleCriminalRecord}
+                    className="h-5 w-5"
+                  />
+                  <label>Has Criminal Record</label>
+                </div>
+                {formData.has_criminal_record && (
                   <>
-                    <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-blue-400">
-                      <Webcam
-                        audio={false}
-                        ref={webcamRef}
-                        screenshotFormat="image/jpeg"
-                        videoConstraints={{
-                          width: 480,
-                          height: 480,
-                          facingMode: 'user',
-                        }}
-                        className="w-full"
-                      />
-                      <div className="absolute inset-0 pointer-events-none">
-                        {/* Face alignment guide */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-64 h-64 border-2 border-blue-400 rounded-full opacity-50"></div>
+                    <Input
+                      label="Case Details"
+                      name="case_details"
+                      value={formData.case_details}
+                      onChange={handleInputChange}
+                    />
+                    <Input
+                      label="Police Station"
+                      name="police_station"
+                      value={formData.police_station}
+                      onChange={handleInputChange}
+                    />
+                    <Input
+                      label="Case Number"
+                      name="case_number"
+                      value={formData.case_number}
+                      onChange={handleInputChange}
+                    />
+                    <Input
+                      label="Judgment"
+                      name="judgment"
+                      value={formData.judgment}
+                      onChange={handleInputChange}
+                    />
+                    <Input
+                      label="Accusation"
+                      name="accusation"
+                      value={formData.accusation}
+                      onChange={handleInputChange}
+                    />
+                  </>
+                )}
+                <SectionButtons onPrev={prevSection} onNext={nextSection} />
+              </motion.div>
+            )}
+
+            {currentSection === 4 && (
+              <motion.div
+                initial={{ x: 30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="space-y-4"
+              >
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  Travel Information
+                </h3>
+                <Input
+                  label="Travel Date"
+                  name="travel_date"
+                  type="date"
+                  value={formData.travel_date}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Travel Destination"
+                  name="travel_destination"
+                  value={formData.travel_destination}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Arrival Airport"
+                  name="arrival_airport"
+                  value={formData.arrival_airport}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Arrival Date"
+                  name="arrival_date"
+                  type="date"
+                  value={formData.arrival_date}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Flight Number"
+                  name="flight_number"
+                  value={formData.flight_number}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Return Date"
+                  name="return_date"
+                  type="date"
+                  value={formData.return_date}
+                  onChange={handleInputChange}
+                />
+                <SectionButtons onPrev={prevSection} onNext={nextSection} />
+              </motion.div>
+            )}
+
+            {currentSection === 5 && (
+              <motion.div
+                initial={{ x: 30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="space-y-4"
+              >
+                {/* Toggle between upload and camera capture */}
+                <div className="flex items-center space-x-4 mb-4">
+                  <button
+                    type="button"
+                    onClick={handleToggleCamera}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    {formData.useCamera
+                      ? 'Switch to Upload'
+                      : 'Switch to Capture'}
+                  </button>
+                  <div>
+                    {formData.useCamera ? (
+                      <FaCamera className="text-white text-2xl" />
+                    ) : (
+                      <FaUpload className="text-white text-2xl" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload image option */}
+                {!formData.useCamera ? (
+                  <div className="flex flex-col items-center">
+                    <label className="block text-white font-semibold mb-2">
+                      Upload Image
+                    </label>
+                    <div
+                      className="cursor-pointer"
+                      onClick={() =>
+                        document.getElementById('fileInput')?.click()
+                      }
+                    >
+                      <AnimatedFaceIcon size="md" text="Click to upload" />
+                    </div>
+                    <input
+                      id="fileInput"
+                      type="file"
+                      name="image"
+                      onChange={handleFileChange}
+                      accept="image/jpeg,image/png"
+                      className="hidden"
+                    />
+                  </div>
+                ) : (
+                  // Camera capture section
+                  <div className="flex flex-col items-center text-white">
+                    {!capturedImage ? (
+                      <>
+                        <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-blue-400">
+                          <Webcam
+                            audio={false}
+                            ref={webcamRef}
+                            screenshotFormat="image/jpeg"
+                            videoConstraints={{
+                              width: 480,
+                              height: 480,
+                              facingMode: 'user',
+                            }}
+                            className="w-full"
+                          />
+                          <div className="absolute inset-0 pointer-events-none">
+                            {/* Face alignment guide */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-64 h-64 border-2 border-blue-400 rounded-full opacity-50"></div>
+                            </div>
+                            <svg
+                              width="100%"
+                              height="100%"
+                              viewBox="0 0 100 100"
+                              preserveAspectRatio="none"
+                            >
+                              <path
+                                d="M20,20 L20,30 L30,30 M70,30 L80,30 L80,20 M80,80 L80,70 L70,70 M30,70 L20,70 L20,80"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                                fill="none"
+                              />
+                            </svg>
+                          </div>
                         </div>
+
+                        <button
+                          type="button"
+                          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto"
+                          onClick={captureImage}
+                        >
+                          <FaCamera className="mr-2" /> Capture Photo
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-green-400">
+                          <img
+                            src={capturedImage}
+                            alt="Captured"
+                            className="w-full"
+                          />
+                          <div className="absolute top-2 right-2">
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="bg-green-500 text-white p-2 rounded-full"
+                            >
+                              ✓
+                            </motion.div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
+                          onClick={retakePhoto}
+                        >
+                          <FaRedo className="mr-2" /> Retake Photo
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Image preview - only show for uploaded images */}
+                {formData.image && !formData.useCamera && (
+                  <div className="mt-4 flex justify-center">
+                    <img
+                      src={URL.createObjectURL(formData.image)}
+                      alt="Preview"
+                      className="max-w-full max-h-64 rounded shadow-md"
+                    />
+                  </div>
+                )}
+
+                <SectionButtons onPrev={prevSection} />
+
+                {/* Submit Button */}
+                <div className="mt-8 flex flex-col items-center">
+                  {submitSuccess ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className="bg-green-500 text-white p-4 rounded-full mb-2">
                         <svg
-                          width="100%"
-                          height="100%"
-                          viewBox="0 0 100 100"
-                          preserveAspectRatio="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-8 w-8"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
                         >
                           <path
-                            d="M20,20 L20,30 L30,30 M70,30 L80,30 L80,20 M80,80 L80,70 L70,70 M30,70 L20,70 L20,80"
-                            stroke="#3b82f6"
-                            strokeWidth="2"
-                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
                           />
                         </svg>
                       </div>
-                    </div>
-                    <div className="mt-4 text-center text-white/80 text-sm">
-                      <p className="mb-2 font-semibold">
-                        Tips for a good photo:
+                      <p className="text-white font-medium">
+                        Registration Submitted Successfully!
                       </p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Position your face within the circle</li>
-                        <li>Look directly at the camera</li>
-                        <li>Keep your head level and centered</li>
-                        <li>Ensure good lighting on your face</li>
-                        <li>Remove any face coverings</li>
-                        <li>Make sure your entire face is visible</li>
-                        <li>Keep a neutral expression</li>
-                      </ul>
-                    </div>
-                    <button
-                      type="button"
-                      className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto"
-                      onClick={captureImage}
-                    >
-                      <FaCamera className="mr-2" /> Capture Photo
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-green-400">
-                      <img
-                        src={capturedImage}
-                        alt="Captured"
-                        className="w-full"
-                      />
-                      <div className="absolute top-2 right-2">
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="bg-green-500 text-white p-2 rounded-full"
-                        >
-                          ✓
-                        </motion.div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
-                      onClick={retakePhoto}
-                    >
-                      <FaRedo className="mr-2" /> Retake Photo
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Image preview - only show for uploaded images */}
-            {formData.image && !formData.useCamera && (
-              <div className="mt-4 flex justify-center">
-                <img
-                  src={URL.createObjectURL(formData.image)}
-                  alt="Preview"
-                  className="max-w-full max-h-64 rounded shadow-md"
-                />
-              </div>
-            )}
-
-            <SectionButtons onPrev={prevSection} />
-
-            {/* Submit Button */}
-            <div className="mt-8 flex flex-col items-center">
-              {submitSuccess ? (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="flex flex-col items-center"
-                >
-                  <div className="bg-green-500 text-white p-4 rounded-full mb-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-8 w-8"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-white font-medium">
-                    Registration Submitted Successfully!
-                  </p>
-                  <Link
-                    to="/home"
-                    className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Return to Home
-                  </Link>
-                </motion.div>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`
-                    px-8 py-3 rounded-lg font-semibold
-                    flex items-center justify-center
-                    transition-all duration-300
-                    ${
-                      loading
-                        ? 'bg-blue-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-blue-500/30'
-                    }
-                    text-white min-w-[200px]
-                    relative overflow-hidden
-                  `}
-                >
-                  {loading && (
-                    <motion.div
-                      className="absolute inset-0 bg-blue-500 opacity-30"
-                      initial={{ width: 0 }}
-                      animate={{ width: '100%' }}
-                      transition={{ duration: 1.5 }}
-                    />
-                  )}
-
-                  {loading ? (
-                    <div className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
+                      <Link
+                        to="/home"
+                        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing...
-                    </div>
+                        Return to Home
+                      </Link>
+                    </motion.div>
                   ) : (
-                    <>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={`
+                        px-8 py-3 rounded-lg font-semibold
+                        flex items-center justify-center
+                        transition-all duration-300
+                        ${
+                          loading
+                            ? 'bg-blue-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-blue-500/30'
+                        }
+                        text-white min-w-[200px]
+                        relative overflow-hidden
+                      `}
+                    >
+                      {loading && (
+                        <motion.div
+                          className="absolute inset-0 bg-blue-500 opacity-30"
+                          initial={{ width: 0 }}
+                          animate={{ width: '100%' }}
+                          transition={{ duration: 1.5 }}
                         />
-                      </svg>
-                      Submit Registration
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
+                      )}
 
-        {/* Error Messages */}
-        {error && (
-          <div className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4">
-            <p className="text-red-200">{error}</p>
-          </div>
+                      {loading ? (
+                        <div className="flex items-center">
+                          <svg
+                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Processing...
+                        </div>
+                      ) : (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          Submit Registration
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </motion.form>
     </div>

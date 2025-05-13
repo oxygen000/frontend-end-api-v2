@@ -20,7 +20,7 @@ function UserMenu({
         className="flex items-center p-2 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none transition duration-300 ease-in-out"
       >
         <img
-          src={userAvatar} // استخدام صورة المستخدم
+          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userAvatar)}&background=random`} // استخدام صورة المستخدم
           alt="User Avatar"
           className="w-8 h-8 rounded-full mr-2"
         />

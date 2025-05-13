@@ -61,7 +61,7 @@ export const useUsers = (
           api.getAll(skip, limit),
           commonApi.getCount(category),
         ]);
-        setUsers(usersData as UserType[]);
+        setUsers(usersData.users as UserType[]);
         setTotalCount(countData.count);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -140,7 +140,7 @@ export const useUsers = (
       setError(null);
       try {
         const results = await commonApi.search(query, category);
-        setUsers(results as UserType[]);
+        setUsers(results.users as UserType[]);
         return results;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');

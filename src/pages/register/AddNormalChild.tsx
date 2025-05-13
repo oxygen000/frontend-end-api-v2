@@ -3,12 +3,12 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Input from '../../components/Input';
 import Textarea from '../../components/Textarea';
-import axios from 'axios';
-import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
 import Webcam from 'react-webcam';
+import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
-import { handleImageUpload } from '../../utils/apiUtils';
-import { PERSON_CATEGORIES } from '../../config/constants';
+import { BASE_API_URL } from '../../config/constants';
+import { registrationApi } from '../../services/api';
 
 // SectionButtons component
 const SectionButtons = ({
@@ -55,59 +55,61 @@ const SectionButtons = ({
   </div>
 );
 
+// Add interface with face_id property to fix TypeScript errors
+interface UserWithFaceId {
+  id: string;
+  name: string;
+  face_id?: string;
+  image_path?: string;
+  [key: string]: unknown;
+}
+
+// Update the FormData interface to include the image property
 interface FormData {
-  // Basic information (essential)
+  // Basic information
   name: string;
   dob: string;
   gender: string;
+  national_id: string;
+  address: string;
 
-  // Guardian information (essential)
-  guardianName: string;
-  guardianPhone: string;
+  // Guardian information
+  guardian_name: string;
+  guardian_phone: string;
   relationship: string;
 
-  // Disappearance details (essential)
-  lastSeenTime: string;
-  lastClothes: string;
-  lastKnownLocation: string;
+  // Disappearance details
+  last_seen_time: string;
+  last_seen_location: string;
+  last_seen_clothes: string;
+  physical_description: string;
 
-  // Physical description (essential)
-  physicalDesc: string;
-
-  // Additional information (optional)
-  additionalNotes: string;
-
-  // New field for form_type
+  // Additional information
+  additional_notes: string;
   form_type: string;
+  image?: File;
 }
+
+const initialFormData: FormData = {
+  name: '',
+  dob: '',
+  gender: '',
+  national_id: '',
+  address: '',
+  guardian_name: '',
+  guardian_phone: '',
+  relationship: '',
+  last_seen_time: '',
+  last_seen_location: '',
+  last_seen_clothes: '',
+  physical_description: '',
+  additional_notes: '',
+  form_type: 'child',
+};
 
 function AddNormalChild() {
   const [currentSection, setCurrentSection] = useState(1);
-  const [formData, setFormData] = useState<FormData>({
-    // Basic information (essential)
-    name: '',
-    dob: '',
-    gender: '',
-
-    // Guardian information (essential)
-    guardianName: '',
-    guardianPhone: '',
-    relationship: '',
-
-    // Disappearance details (essential)
-    lastSeenTime: '',
-    lastClothes: '',
-    lastKnownLocation: '',
-
-    // Physical description (essential)
-    physicalDesc: '',
-
-    // Additional information (optional)
-    additionalNotes: '',
-
-    // New field for form_type
-    form_type: 'child',
-  });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -163,15 +165,15 @@ function AddNormalChild() {
       if (!formData.dob) errors.push('Date of Birth is required');
       if (!formData.gender) errors.push('Gender is required');
     } else if (currentSection === 2) {
-      if (!formData.guardianName) errors.push("Guardian's Name is required");
-      if (!formData.guardianPhone) errors.push("Guardian's Phone is required");
+      if (!formData.guardian_name) errors.push("Guardian's Name is required");
+      if (!formData.guardian_phone) errors.push("Guardian's Phone is required");
       if (!formData.relationship)
         errors.push('Relationship to child is required');
     } else if (currentSection === 3) {
-      if (!formData.lastSeenTime)
+      if (!formData.last_seen_time)
         errors.push('Last Seen (Date & Time) is required');
-      if (!formData.lastClothes) errors.push('Clothes Worn is required');
-      if (!formData.lastKnownLocation)
+      if (!formData.last_seen_clothes) errors.push('Clothes Worn is required');
+      if (!formData.last_seen_location)
         errors.push('Last Known Location is required');
       if (!capturedImage) errors.push("Child's Photo is required");
     }
@@ -215,20 +217,7 @@ function AddNormalChild() {
   };
 
   const clearForm = () => {
-    setFormData({
-      name: '',
-      dob: '',
-      gender: '',
-      guardianName: '',
-      guardianPhone: '',
-      relationship: '',
-      lastSeenTime: '',
-      lastClothes: '',
-      lastKnownLocation: '',
-      physicalDesc: '',
-      additionalNotes: '',
-      form_type: 'child',
-    });
+    setFormData(initialFormData);
     setCapturedImage(null);
     setCurrentSection(1);
     setFormErrors([]);
@@ -236,81 +225,298 @@ function AddNormalChild() {
     setIsSubmitting(false);
   };
 
-  // Unified form submission function
+  // Enhanced form submission with better error handling and face_id retry
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+
+    if (!validateForm()) {
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      // Prepare form data
-      const submissionData = {
-        name: formData.name,
-        dob: formData.dob,
-        gender: formData.gender,
-        guardian_name: formData.guardianName,
-        guardian_phone: formData.guardianPhone,
-        relationship: formData.relationship,
-        last_seen_time: formData.lastSeenTime,
-        last_clothes: formData.lastClothes,
-        area_of_disappearance: formData.lastKnownLocation,
-        physical_description: formData.physicalDesc,
-        notes: formData.additionalNotes || '',
-        // Add required fields for UserData type
-        national_id: '',
-        address: '',
-        phone_number: '',
-        phone_company: '',
-        category: PERSON_CATEGORIES.CHILD,
-        form_type: 'child',
-      };
+      // Debug the form data first
+      console.log('Form data being submitted:', formData);
 
-      // Submit to API
-      const response = await handleImageUpload(
-        null,
-        capturedImage,
-        submissionData,
-        PERSON_CATEGORIES.CHILD
+      // Create a FormData object to handle file upload
+      const formDataToSend = new FormData();
+
+      // Important: These are all the specific fields that the backend expects
+      // Basic user fields - match exactly what the backend expects
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('nickname', formData.name.split(' ')[0] || '');
+      formDataToSend.append('dob', formData.dob);
+      formDataToSend.append('national_id', formData.national_id || '');
+      formDataToSend.append('address', formData.address || '');
+      formDataToSend.append('category', 'child');
+      formDataToSend.append('form_type', 'child');
+
+      // Additional fields that might be required by the backend
+      formDataToSend.append('employee_id', ''); // Backend expects this field
+      formDataToSend.append('department', '');
+      formDataToSend.append('role', '');
+      formDataToSend.append('bypass_angle_check', 'false');
+      formDataToSend.append('train_multiple', 'true');
+
+      // Child-specific fields - directly append to formData with exact backend field names
+      formDataToSend.append('date_of_birth', formData.dob || '');
+      formDataToSend.append(
+        'physical_description',
+        formData.physical_description || ''
+      );
+      formDataToSend.append('last_clothes', formData.last_seen_clothes || '');
+      formDataToSend.append(
+        'area_of_disappearance',
+        formData.last_seen_location || ''
+      );
+      formDataToSend.append('last_seen_time', formData.last_seen_time || '');
+      formDataToSend.append('guardian_name', formData.guardian_name || '');
+      formDataToSend.append('guardian_phone', formData.guardian_phone || '');
+      formDataToSend.append('guardian_id', formData.national_id || '');
+      formDataToSend.append('relationship', formData.relationship || '');
+      formDataToSend.append(
+        'additional_notes',
+        formData.additional_notes || ''
       );
 
-      console.log('Registration successful:', response);
+      // Additional important fields
+      formDataToSend.append('description', ''); // Empty but required field
+      formDataToSend.append('notes', ''); // Empty but required field
 
-      // Show success message and store the user ID from response
-      setSubmitSuccess(true);
-      if (response && response.user_id) {
-        setRegisteredUserId(response.user_id);
+      // Create a complete child data object and append as JSON
+      const childData = {
+        name: formData.name,
+        nickname: formData.name.split(' ')[0] || '',
+        dob: formData.dob,
+        date_of_birth: formData.dob,
+        national_id: formData.national_id || '',
+        address: formData.address || '',
+        category: 'child',
+        form_type: 'child',
+        physical_description: formData.physical_description || '',
+        last_clothes: formData.last_seen_clothes || '',
+        area_of_disappearance: formData.last_seen_location || '',
+        last_seen_time: formData.last_seen_time || '',
+        guardian_name: formData.guardian_name || '',
+        guardian_phone: formData.guardian_phone || '',
+        guardian_id: formData.national_id || '',
+        relationship: formData.relationship || '',
+        gender: formData.gender || '',
+        additional_notes: formData.additional_notes || '',
+        employee_id: '',
+        department: '',
+        role: '',
+      };
+
+      // Append the complete user data in JSON format
+      formDataToSend.append('user_data', JSON.stringify(childData));
+      formDataToSend.append('child_data', JSON.stringify(childData));
+
+      // Handle image from file upload or webcam
+      let imageFile: File | null = null;
+
+      if (formData.image) {
+        // If image was uploaded from file input
+        imageFile = formData.image;
+        if (imageFile) {
+          console.log(
+            'Using uploaded image file:',
+            imageFile.name,
+            imageFile.size,
+            'bytes',
+            imageFile.type
+          );
+        }
+      } else if (capturedImage) {
+        // If image was captured from webcam, convert base64 to file
+        console.log('Converting webcam image from base64 to file');
+
+        // Extract the base64 part if it's a data URL
+        let base64Data = capturedImage;
+        if (base64Data.startsWith('data:image/jpeg;base64,')) {
+          base64Data = capturedImage.split(',')[1];
+        } else if (base64Data.startsWith('data:')) {
+          // Handle other image formats
+          const matches = base64Data.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            base64Data = matches[2];
+          } else {
+            console.error('Invalid data URL format');
+            throw new Error('Invalid image format from webcam');
+          }
+        }
+
+        try {
+          const byteString = atob(base64Data);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+
+          const blob = new Blob([ab], { type: 'image/jpeg' });
+          imageFile = new File([blob], `webcam_capture_${Date.now()}.jpg`, {
+            type: 'image/jpeg',
+          });
+          console.log(
+            'Created file from webcam image:',
+            imageFile.size,
+            'bytes',
+            imageFile.type
+          );
+        } catch (error) {
+          console.error('Error converting base64 to file:', error);
+          throw new Error(
+            'Failed to process webcam image. Please try again or upload a file instead.'
+          );
+        }
       }
 
-      // Reset form after delay
-      setTimeout(() => {
-        clearForm();
-      }, 5000);
-    } catch (error) {
-      console.error('Error registering child:', error);
+      if (imageFile) {
+        // Append the file with name 'file' as expected by the backend
+        formDataToSend.append('file', imageFile);
 
-      // Handle API errors
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          // Server responded with an error
-          const errorMessage =
-            error.response.data?.message || 'Unknown server error';
-          setFormErrors([errorMessage]);
-        } else if (error.request) {
-          // No response received
-          setFormErrors([
-            'No response from server. Please check your internet connection.',
-          ]);
-        } else {
-          // Request setup error
-          setFormErrors(['Error setting up request. Please try again.']);
+        console.log('Image file appended to form data:', {
+          name: imageFile.name,
+          size: imageFile.size,
+          type: imageFile.type,
+          lastModified: new Date(imageFile.lastModified).toISOString(),
+        });
+
+        // For debugging - log all form data entries
+        console.log('Form data entries being sent to server:');
+        for (const pair of formDataToSend.entries()) {
+          console.log(
+            pair[0],
+            pair[1] instanceof File
+              ? `[File: ${pair[1].name}, ${pair[1].size} bytes]`
+              : pair[1]
+          );
         }
       } else {
-        // Non-Axios error
-        setFormErrors([
-          (error as Error).message || 'An unknown error occurred',
-        ]);
+        // No image was provided
+        throw new Error('Please provide an image');
       }
+
+      // Debug log
+      console.log('Sending registration with image to API');
+
+      // Use the registration API service instead of direct fetch
+      const responseData = await registrationApi.registerUser(formDataToSend);
+      console.log('Response data:', responseData);
+
+      // Handle successful registration
+      setSubmitSuccess(true);
+
+      // Use the ID from the response to navigate to the user profile
+      const userId = responseData?.user_id;
+      const userName = responseData?.user?.name || formData.name;
+      if (userId) {
+        setRegisteredUserId(userId);
+      }
+      toast.success(`${userName} registered successfully!`);
+
+      console.log(
+        `User registered successfully with ID: ${userId || 'Not available'}`
+      );
+      console.log(
+        `Image path: ${responseData?.user?.image_path || 'Not available'}`
+      );
+      console.log(`Face ID: ${responseData?.face_id || 'Not available'}`);
+
+      // Verify the registration only if we have a userId
+      if (userId) {
+        // Try to verify the registration up to 3 times with delays
+        // This helps ensure the backend has time to process the face encoding
+        let user: UserWithFaceId | null = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries) {
+          try {
+            const verificationData =
+              await registrationApi.verifyRegistration(userId);
+            user = verificationData.user as UserWithFaceId;
+
+            if (user && user.face_id) {
+              console.log(
+                'User verification successful with face_id:',
+                user.face_id
+              );
+              break;
+            } else {
+              console.log(
+                `Verification attempt ${retryCount + 1}: No face_id yet`
+              );
+              retryCount++;
+
+              if (retryCount < maxRetries) {
+                // Wait before retrying (increasing delay with each retry)
+                const delay = 1000 * retryCount;
+                console.log(`Waiting ${delay}ms before retrying...`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+              }
+            }
+          } catch (error) {
+            console.error('Error during verification:', error);
+            retryCount++;
+            if (retryCount >= maxRetries) break;
+          }
+        }
+
+        if (!user || !user.face_id) {
+          console.warn(
+            'User verification completed but no face_id was generated'
+          );
+          // Try to trigger face processing again by sending a verification request
+          try {
+            if (imageFile) {
+              console.log(
+                'Attempting to trigger face processing via verify-face endpoint'
+              );
+              const verifyFormData = new FormData();
+              verifyFormData.append('file', imageFile);
+
+              const verifyResponse = await fetch(
+                `${BASE_API_URL}/api/verify-face`,
+                {
+                  method: 'POST',
+                  body: verifyFormData,
+                }
+              );
+
+              if (verifyResponse.ok) {
+                console.log(
+                  'Face verification successful, this may help generate face_id'
+                );
+              }
+            }
+          } catch (verifyError) {
+            console.error('Error during face verification:', verifyError);
+          }
+        }
+      } else {
+        console.warn('No user ID received from server, skipping verification');
+      }
+
+      // Reset form data and state after a delay
+      setTimeout(() => {
+        setFormData(initialFormData);
+        setCapturedImage(null);
+        setCurrentSection(1);
+        setFormErrors([]);
+        setSubmitSuccess(false);
+      }, 3000); // Delay reset to allow the success animation to play
+    } catch (err) {
+      console.error('Registration error:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred during registration';
+      toast.error(errorMessage);
+      setFormErrors([errorMessage]);
     } finally {
       setIsSubmitting(false);
     }
@@ -490,14 +696,14 @@ function AddNormalChild() {
               <h3 className="text-lg font-semibold">Guardian Information</h3>
               <Input
                 label="Guardian's Name"
-                name="guardianName"
-                value={formData.guardianName}
+                name="guardian_name"
+                value={formData.guardian_name}
                 onChange={handleInputChange}
               />
               <Input
                 label="Guardian's Phone Number"
-                name="guardianPhone"
-                value={formData.guardianPhone}
+                name="guardian_phone"
+                value={formData.guardian_phone}
                 onChange={handleInputChange}
               />
               <div>
@@ -534,33 +740,33 @@ function AddNormalChild() {
               <h3 className="text-lg font-semibold">Disappearance Details</h3>
               <Input
                 label="Last Seen (Date & Time)"
-                name="lastSeenTime"
+                name="last_seen_time"
                 type="datetime-local"
-                value={formData.lastSeenTime}
+                value={formData.last_seen_time}
                 onChange={handleInputChange}
               />
               <Input
                 label="Last Known Location"
-                name="lastKnownLocation"
-                value={formData.lastKnownLocation}
+                name="last_seen_location"
+                value={formData.last_seen_location}
                 onChange={handleInputChange}
               />
               <Textarea
                 label="Clothes Worn When Last Seen"
-                name="lastClothes"
-                value={formData.lastClothes}
+                name="last_seen_clothes"
+                value={formData.last_seen_clothes}
                 onChange={handleInputChange}
               />
               <Textarea
                 label="Physical Description"
-                name="physicalDesc"
-                value={formData.physicalDesc}
+                name="physical_description"
+                value={formData.physical_description}
                 onChange={handleInputChange}
               />
               <Textarea
                 label="Additional Notes"
-                name="additionalNotes"
-                value={formData.additionalNotes}
+                name="additional_notes"
+                value={formData.additional_notes}
                 onChange={handleInputChange}
               />
 

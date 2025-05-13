@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-// import { checkApiHealth } from '../utils/apiUtils';
-// import { BASE_API_URL } from '../config/constants';
+import { registrationApi } from '../services/api';
+import { BASE_API_URL } from '../config/constants';
 
 interface HealthResponse {
   status: string;
@@ -15,10 +15,19 @@ const ApiStatus: React.FC = () => {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch('/api/health');
-        const data: HealthResponse = await response.json();
-        setIsHealthy(data.status === 'ok');
-        setApiVersion(data.version || 'Unknown');
+        // First try our API health check from the service
+        const isHealthy = await registrationApi.checkApiHealth();
+        setIsHealthy(isHealthy);
+
+        // Additionally try to get the version info
+        try {
+          const response = await fetch(`${BASE_API_URL}/api/health`);
+          const data: HealthResponse = await response.json();
+          setApiVersion(data.version || 'Unknown');
+        } catch (error) {
+          console.error('Version check failed:', error);
+        }
+
         setLastChecked(new Date());
       } catch (error) {
         console.error('Health check failed:', error);

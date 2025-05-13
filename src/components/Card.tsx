@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 interface User {
   id: string;
   name: string;
-  employee_id?: string;
+  nickname: string;
   department?: string;
   role?: string;
   image_path?: string;
@@ -26,11 +26,23 @@ interface CardProps {
 const Card: React.FC<CardProps> = ({ user }) => {
   const getImageUrl = () => {
     if (user.image_path) {
-      return `https://backend-fast-api-ai.fly.dev/${user.image_path}`;
+      // Check if image_path already contains the full URL
+      if (user.image_path.startsWith('http')) {
+        return user.image_path;
+      }
+
+      // If image_path doesn't contain 'uploads/' prefix, add it
+      const imagePath = user.image_path.includes('uploads/')
+        ? user.image_path
+        : `uploads/${user.image_path}`;
+
+      // Ensure we don't have double slashes in the URL
+      return `https://backend-fast-api-ai.fly.dev/${imagePath.replace(/^\/?/, '')}`;
     }
     if (user.image_url) {
       return user.image_url;
     }
+    // Return default avatar based on user name
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
   };
 
@@ -50,11 +62,8 @@ const Card: React.FC<CardProps> = ({ user }) => {
 
       <div className="text-center">
         <h3 className="text-xl font-semibold text-white">{user.name}</h3>
-        {user.category && (
-          <p className="text-white/70 text-sm mt-1">{user.category}</p>
-        )}
-        {user.department && (
-          <p className="text-white/70 text-sm mt-1">{user.department}</p>
+        {user.nickname && (
+          <p className="text-white/70 text-sm mt-1">({user.nickname})</p>
         )}
       </div>
 
@@ -67,7 +76,7 @@ const Card: React.FC<CardProps> = ({ user }) => {
         <div className="flex justify-between items-center">
           <p className="text-white/70">ID:</p>
           <p className="font-bold text-white">
-            {user.national_id || user.employee_id || 'N/A'}
+            {user.national_id || user.national_id || 'N/A'}
           </p>
         </div>
 
