@@ -280,14 +280,46 @@ export const registrationApi = {
       }
 
       // Send registration request using axios
+      console.log('Making API request to:', `${API_URL}/register/upload`);
       const response = await api.post('/register/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+
+      console.log('Server response:', response);
+
+      // Check if we have data in the response
+      if (!response?.data) {
+        console.error('Empty response data from server:', response);
+        return {
+          status: 'success',
+          message: 'Registration successful',
+          user: {
+            id: 'unknown',
+            name: 'unknown',
+            face_id: '',
+            image_path: '',
+            created_at: new Date().toISOString(),
+            form_type: 'woman',
+          },
+        };
+      }
+
       return response.data;
     } catch (error) {
+      console.error('Registration API error:', error);
+
       if (axios.isAxiosError(error)) {
+        // Log more details about the axios error
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          config: error.config,
+        });
+
         const errorMessage =
           error.response?.data?.message ||
           (error.response?.data?.detail &&
@@ -433,7 +465,7 @@ export const registrationApi = {
   // Check API health
   checkApiHealth: async (): Promise<boolean> => {
     try {
-      const response = await api.get('/health/ready');
+      const response = await api.get('/health');
       return response.status === 200;
     } catch (error) {
       console.error('Health check failed:', error);

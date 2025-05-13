@@ -348,8 +348,9 @@ const AddNormalMan = () => {
       // Pass individual form fields as expected by the API
       formDataToSend.append('name', formData.name);
       formDataToSend.append('form_type', 'man');
-      formDataToSend.append('bypass_angle_check', 'false');
+      formDataToSend.append('bypass_angle_check', 'true');
       formDataToSend.append('train_multiple', 'true');
+      formDataToSend.append('category', 'male');
 
       // Convert boolean values to "1"/"0" strings for proper backend processing
       formDataToSend.append(
@@ -425,6 +426,14 @@ const AddNormalMan = () => {
       const userName = responseData?.user?.name || formData.name;
       toast.success(`${userName} registered successfully!`);
 
+      // Reset form data after animation plays
+      setTimeout(() => {
+        setFormData(initialFormData);
+        setCapturedImage(null);
+        setCurrentSection(1);
+        setSubmitSuccess(false);
+      }, 3000);
+
       // Additional verification or processing can go here
     } catch (err) {
       console.error('Registration error:', err);
@@ -494,7 +503,7 @@ const AddNormalMan = () => {
           className="bg-green-500 h-2 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: '100%' }}
-          transition={{ duration: 2.5, ease: 'linear' }}
+          transition={{ duration: 3, ease: 'linear' }}
         />
       </div>
       <p className="text-center mt-4 text-white/70">

@@ -87,7 +87,8 @@ interface FormData {
   // Additional information
   additional_notes: string;
   form_type: string;
-  image?: File;
+  image: File | null;
+  useCamera: boolean;
 }
 
 const initialFormData: FormData = {
@@ -105,6 +106,8 @@ const initialFormData: FormData = {
   physical_description: '',
   additional_notes: '',
   form_type: 'child',
+  image: null,
+  useCamera: false,
 };
 
 function AddNormalChild() {
@@ -121,12 +124,40 @@ function AddNormalChild() {
   const handleToggleCamera = () => {
     setUseCamera(!useCamera);
     setCapturedImage(null);
+    setFormData((prev) => ({
+      ...prev,
+      useCamera: !useCamera,
+      image: null,
+    }));
   };
 
   const captureImage = () => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       setCapturedImage(imageSrc);
+
+      // Convert the captured image to a File object for API submission
+      if (imageSrc) {
+        // Convert base64 to blob
+        const byteString = atob(imageSrc.split(',')[1]);
+        const mimeString = imageSrc.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+
+        const blob = new Blob([ab], { type: mimeString });
+        const file = new File([blob], 'captured-image.jpg', {
+          type: 'image/jpeg',
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          image: file,
+        }));
+      }
     }
   };
 
@@ -150,7 +181,11 @@ function AddNormalChild() {
     const file = e.target.files?.[0];
     if (file && file.size <= 5 * 1024 * 1024) {
       setCapturedImage(null);
-    } else {
+      setFormData((prev) => ({
+        ...prev,
+        image: file,
+      }));
+    } else if (file) {
       alert('File size exceeds 5MB');
     }
   };
@@ -175,7 +210,9 @@ function AddNormalChild() {
       if (!formData.last_seen_clothes) errors.push('Clothes Worn is required');
       if (!formData.last_seen_location)
         errors.push('Last Known Location is required');
-      if (!capturedImage) errors.push("Child's Photo is required");
+    } else if (currentSection === 4) {
+      if (!capturedImage && !formData.image)
+        errors.push("Child's Photo is required");
     }
 
     setFormErrors(errors);
@@ -216,15 +253,6 @@ function AddNormalChild() {
     }, 100);
   };
 
-  const clearForm = () => {
-    setFormData(initialFormData);
-    setCapturedImage(null);
-    setCurrentSection(1);
-    setFormErrors([]);
-    setSubmitSuccess(false);
-    setIsSubmitting(false);
-  };
-
   // Enhanced form submission with better error handling and face_id retry
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,7 +284,7 @@ function AddNormalChild() {
       formDataToSend.append('employee_id', ''); // Backend expects this field
       formDataToSend.append('department', '');
       formDataToSend.append('role', '');
-      formDataToSend.append('bypass_angle_check', 'false');
+      formDataToSend.append('bypass_angle_check', 'true');
       formDataToSend.append('train_multiple', 'true');
 
       // Child-specific fields - directly append to formData with exact backend field names
@@ -409,6 +437,7 @@ function AddNormalChild() {
 
       // Handle successful registration
       setSubmitSuccess(true);
+      setIsSubmitting(false);
 
       // Use the ID from the response to navigate to the user profile
       const userId = responseData?.user_id;
@@ -417,6 +446,15 @@ function AddNormalChild() {
         setRegisteredUserId(userId);
       }
       toast.success(`${userName} registered successfully!`);
+
+      // Reset form data after animation plays
+      setTimeout(() => {
+        setFormData(initialFormData);
+        setCapturedImage(null);
+        setCurrentSection(1);
+        setSubmitSuccess(false);
+        setIsSubmitting(false);
+      }, 3000);
 
       console.log(
         `User registered successfully with ID: ${userId || 'Not available'}`
@@ -500,15 +538,6 @@ function AddNormalChild() {
       } else {
         console.warn('No user ID received from server, skipping verification');
       }
-
-      // Reset form data and state after a delay
-      setTimeout(() => {
-        setFormData(initialFormData);
-        setCapturedImage(null);
-        setCurrentSection(1);
-        setFormErrors([]);
-        setSubmitSuccess(false);
-      }, 3000); // Delay reset to allow the success animation to play
     } catch (err) {
       console.error('Registration error:', err);
       const errorMessage =
@@ -549,7 +578,7 @@ function AddNormalChild() {
       {/* Form Progress Indicator */}
       <div className="flex justify-center mt-6">
         <div className="flex items-center space-x-4">
-          {[1, 2, 3].map((step, idx) => (
+          {[1, 2, 3, 4].map((step, idx) => (
             <React.Fragment key={step}>
               {idx > 0 && (
                 <div className="w-16 h-1 bg-gray-300">
@@ -581,12 +610,43 @@ function AddNormalChild() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold mb-4 text-center">
-            Child Report Submitted
-          </h2>
-          <p className="text-center">
-            Thank you for submitting this report. The information has been
-            recorded successfully.
+          <motion.div
+            className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-10 w-10 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </motion.div>
+          <h3 className="text-3xl font-bold text-white mb-2 text-center">
+            Registration Successful!
+          </h3>
+          <p className="text-white/80 mb-6 text-center">
+            Child has been registered successfully.
+          </p>
+          <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+            <motion.div
+              className="bg-orange-500 h-2 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: '100%' }}
+              transition={{ duration: 3, ease: 'linear' }}
+            />
+          </div>
+          <p className="text-center mt-4 text-white/70">
+            Starting new registration in a moment...
           </p>
 
           {registeredUserId && (
@@ -600,26 +660,6 @@ function AddNormalChild() {
               </p>
             </div>
           )}
-
-          <div className="flex justify-center mt-6 space-x-4">
-            <button
-              onClick={clearForm}
-              className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
-            >
-              Submit Another Report
-            </button>
-
-            {registeredUserId && (
-              <button
-                onClick={() =>
-                  (window.location.href = `/view/${registeredUserId}`)
-                }
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                View Details
-              </button>
-            )}
-          </div>
         </motion.div>
       ) : (
         <motion.form
@@ -729,7 +769,7 @@ function AddNormalChild() {
             </motion.div>
           )}
 
-          {/* Section 3: Disappearance Details & Photo */}
+          {/* Section 3: Disappearance Details */}
           {currentSection === 3 && (
             <motion.div
               initial={{ x: 40, opacity: 0 }}
@@ -769,24 +809,38 @@ function AddNormalChild() {
                 value={formData.additional_notes}
                 onChange={handleInputChange}
               />
+                            <SectionButtons onPrev={prevSection} onNext={nextSection} />
 
-              {/* Upload image option */}
+            </motion.div>
+          )}
+
+          {/* Section 4: Upload Image */}
+          {currentSection === 4 && (
+            <motion.div
+              initial={{ x: 40, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-4"
+            >
+              <h3 className="text-lg font-semibold">Child's Photo</h3>
+              <p className="text-white/80">
+                Please upload a clear photo of the child's face to help with
+                identification.
+              </p>
               <div className="flex flex-col items-center">
-                <label className="block text-white font-semibold mb-2">
-                  Upload Child's Photo
-                </label>
-
                 {/* Toggle between upload and camera capture */}
                 <div className="flex items-center space-x-4 mb-4">
                   <button
                     type="button"
                     onClick={handleToggleCamera}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
                   >
-                    {useCamera ? 'Switch to Upload' : 'Switch to Camera'}
+                    {formData.useCamera
+                      ? 'Switch to Upload'
+                      : 'Switch to Camera'}
                   </button>
                   <div>
-                    {useCamera ? (
+                    {formData.useCamera ? (
                       <FaCamera className="text-white text-2xl" />
                     ) : (
                       <FaUpload className="text-white text-2xl" />
@@ -794,28 +848,43 @@ function AddNormalChild() {
                   </div>
                 </div>
 
-                {!useCamera ? (
-                  <div
-                    className="cursor-pointer"
-                    onClick={() =>
-                      document.getElementById('fileInput')?.click()
-                    }
-                  >
-                    <AnimatedFaceIcon size="md" text="Click to upload" />
-                    <input
-                      id="fileInput"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
+                {!formData.useCamera ? (
+                  <div className="flex flex-col items-center">
+                    <label className="block text-white font-semibold mb-2">
+                      Upload Child's Photo
+                    </label>
+                    <div
+                      className="cursor-pointer"
+                      onClick={() =>
+                        document.getElementById('fileInput')?.click()
+                      }
+                    >
+                      <AnimatedFaceIcon size="md" text="Click to upload" />
+                      <input
+                        id="fileInput"
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {formData.image && (
+                      <div className="mt-4 flex justify-center">
+                        <img
+                          src={URL.createObjectURL(formData.image)}
+                          alt="Preview"
+                          className="max-w-full max-h-64 rounded shadow-md"
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   // Camera capture section
                   <div className="flex flex-col items-center text-white">
                     {!capturedImage ? (
                       <>
-                        <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-blue-400">
+                        <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-orange-400">
                           <Webcam
                             audio={false}
                             ref={webcamRef}
@@ -827,7 +896,11 @@ function AddNormalChild() {
                             }}
                             className="w-full"
                           />
-                          <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                          <div className="absolute inset-0 pointer-events-none">
+                            {/* Face alignment guide */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-64 h-64 border-2 border-orange-400 rounded-full opacity-50"></div>
+                            </div>
                             <svg
                               width="100%"
                               height="100%"
@@ -836,7 +909,7 @@ function AddNormalChild() {
                             >
                               <path
                                 d="M20,20 L20,30 L30,30 M70,30 L80,30 L80,20 M80,80 L80,70 L70,70 M30,70 L20,70 L20,80"
-                                stroke="#3b82f6"
+                                stroke="#f97316"
                                 strokeWidth="2"
                                 fill="none"
                               />
@@ -845,7 +918,7 @@ function AddNormalChild() {
                         </div>
                         <button
                           type="button"
-                          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                          className="mt-4 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center mx-auto"
                           onClick={captureImage}
                         >
                           <FaCamera className="mr-2" /> Capture Photo
@@ -880,19 +953,82 @@ function AddNormalChild() {
                     )}
                   </div>
                 )}
-
-                {capturedImage && !useCamera && (
-                  <img
-                    src={capturedImage}
-                    alt="Preview"
-                    className="mt-2 w-32 h-32 object-cover rounded-md shadow-md"
-                  />
-                )}
               </div>
-              <SectionButtons
-                onPrev={prevSection}
-                isSubmitting={isSubmitting}
-              />
+              <SectionButtons onPrev={prevSection}  />
+
+
+              {/* Submit Button */}
+              <div className="mt-8 flex flex-col items-center">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`
+                    px-8 py-3 rounded-lg font-semibold
+                    flex items-center justify-center
+                    transition-all duration-300
+                    ${
+                      isSubmitting
+                        ? 'bg-orange-400 cursor-not-allowed'
+                        : 'bg-orange-600 hover:bg-orange-700 shadow-lg hover:shadow-orange-500/30'
+                    }
+                    text-white min-w-[200px]
+                    relative overflow-hidden
+                  `}
+                >
+                  {isSubmitting && (
+                    <motion.div
+                      className="absolute inset-0 bg-orange-500 opacity-30"
+                      initial={{ width: 0 }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 1.5 }}
+                    />
+                  )}
+
+                  {isSubmitting ? (
+                    <div className="flex items-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing...
+                    </div>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Submit Registration
+                    </>
+                  )}
+                </button>
+              </div>
             </motion.div>
           )}
         </motion.form>

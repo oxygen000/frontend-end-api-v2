@@ -1,24 +1,13 @@
 import React, { useState, useRef } from 'react';
-import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import Input from '../../components/Input';
 import Textarea from '../../components/Textarea';
+import { Link } from 'react-router-dom';
 import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
+import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import Webcam from 'react-webcam';
-import { BASE_API_URL } from '../../config/constants';
 import { toast } from 'react-hot-toast';
 import { registrationApi } from '../../services/api';
-
-// Define proper interfaces needed
-// This allows user.face_id access without type errors
-interface UserWithFaceId {
-  id: string;
-  name: string;
-  face_id?: string;
-  // Add other potential properties
-  [key: string]: unknown;
-}
 
 interface FormData {
   // Basic information
@@ -47,7 +36,8 @@ interface FormData {
   guardian_phone: string;
   relationship: string;
   form_type: string;
-  image?: File;
+  image: File | null;
+  useCamera: boolean;
 }
 
 const initialFormData: FormData = {
@@ -70,14 +60,14 @@ const initialFormData: FormData = {
   guardian_phone: '',
   relationship: '',
   form_type: 'disabled',
+  image: null,
+  useCamera: false,
 };
 
 function AddDisabled() {
   const [currentSection, setCurrentSection] = useState(1);
   const [useCamera, setUseCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
   const webcamRef = useRef<Webcam>(null);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -163,27 +153,30 @@ function AddDisabled() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.size <= 5 * 1024 * 1024) {
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setCapturedImage(null);
-    } else {
+      setPersonDetails((prev) => ({
+        ...prev,
+        image: file,
+      }));
+    } else if (file) {
       alert('File size exceeds 5MB');
     }
   };
 
   const handleToggleCamera = () => {
     setUseCamera(!useCamera);
-    setSelectedImage(null);
-    setPreviewUrl('');
-    setCapturedImage(null);
+    setPersonDetails((prev) => ({
+      ...prev,
+      useCamera: !useCamera,
+      image: null,
+    }));
   };
 
   const captureImage = () => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
-      setCapturedImage(imageSrc);
-      setSelectedImage(null);
-      setPreviewUrl('');
+      if (imageSrc) {
+        setCapturedImage(imageSrc);
+      }
     }
   };
 
@@ -206,7 +199,8 @@ function AddDisabled() {
     } else if (currentSection === 3) {
       if (!personDetails.disability_type)
         errors.push('Disability Type is required');
-      if (!selectedImage && !capturedImage)
+    } else if (currentSection === 4) {
+      if (!personDetails.image && !capturedImage)
         errors.push("Person's Photo is required");
     }
 
@@ -248,19 +242,10 @@ function AddDisabled() {
     }, 100);
   };
 
-  const clearForm = () => {
-    setPersonDetails(initialFormData);
-    setSelectedImage(null);
-    setPreviewUrl('');
-    setCapturedImage(null);
-    setCurrentSection(1);
-    setFormErrors([]);
-    setSubmitSuccess(false);
-  };
-
-  // Enhanced form submission with better error handling and face_id retry
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle form submission with better error handling
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!validateForm()) {
       return;
     }
@@ -268,9 +253,6 @@ function AddDisabled() {
     setLoading(true);
 
     try {
-      // Debug the form data first
-      console.log('Person details being submitted:', personDetails);
-
       // Create a FormData object to handle file upload
       const formDataToSend = new FormData();
 
@@ -289,89 +271,44 @@ function AddDisabled() {
       formDataToSend.append('category', 'disabled');
       formDataToSend.append('form_type', 'disabled');
 
-      // Additional fields that might be required by the backend
-      formDataToSend.append('employee_id', '');
-      formDataToSend.append('department', '');
-      formDataToSend.append('role', '');
-      formDataToSend.append('bypass_angle_check', 'false');
-      formDataToSend.append('train_multiple', 'true');
-      formDataToSend.append('date_of_birth', personDetails.dob); // Duplicate of dob for compatibility
-
-      // Disability-specific fields with exact backend field names
+      // Disability-specific fields
       formDataToSend.append(
         'disability_type',
         personDetails.disability_type || ''
       );
       formDataToSend.append(
-        'disability_details',
+        'disability_description',
         personDetails.disability_description || ''
       );
       formDataToSend.append(
         'medical_condition',
         personDetails.medical_condition || ''
       );
-      formDataToSend.append('medication', personDetails.special_needs || '');
+      formDataToSend.append('special_needs', personDetails.special_needs || '');
       formDataToSend.append(
-        'caregiver_name',
-        personDetails.guardian_name || ''
+        'emergency_contact',
+        personDetails.emergency_contact || ''
       );
       formDataToSend.append(
-        'caregiver_phone',
-        personDetails.guardian_phone || ''
+        'emergency_phone',
+        personDetails.emergency_phone || ''
       );
       formDataToSend.append(
-        'caregiver_relationship',
-        personDetails.relationship || ''
+        'additional_notes',
+        personDetails.additional_notes || ''
       );
+      formDataToSend.append('employee_id', '');
+      formDataToSend.append('department', '');
+      formDataToSend.append('role', '');
+      formDataToSend.append('bypass_angle_check', 'true');
+      formDataToSend.append('train_multiple', 'true');
 
-      // Additional important fields
-      formDataToSend.append('description', ''); // Empty but required field
-      formDataToSend.append('notes', ''); // Empty but required field
-      formDataToSend.append('additional_notes', ''); // Empty but required field
-
-      // Create a complete data object and append as JSON
-      const disabledData = {
-        name: personDetails.name,
-        nickname: personDetails.name.split(' ')[0] || '',
-        dob: personDetails.dob,
-        date_of_birth: personDetails.dob,
-        national_id: personDetails.national_id,
-        address: personDetails.address || '',
-        phone_number: personDetails.phone_number || '',
-        phone_company: personDetails.phone_company || '',
-        second_phone_number: personDetails.second_phone_number || '',
-        category: 'disabled',
-        form_type: 'disabled',
-        disability_type: personDetails.disability_type || '',
-        disability_details: personDetails.disability_description || '',
-        medical_condition: personDetails.medical_condition || '',
-        medication: personDetails.special_needs || '',
-        caregiver_name: personDetails.guardian_name || '',
-        caregiver_phone: personDetails.guardian_phone || '',
-        caregiver_relationship: personDetails.relationship || '',
-        gender: personDetails.gender || '',
-        employee_id: '',
-        department: '',
-        role: '',
-      };
-
-      // Append both user_data and disabled_data as JSON
-      formDataToSend.append('user_data', JSON.stringify(disabledData));
-      formDataToSend.append('disabled_data', JSON.stringify(disabledData));
-
-      // Handle image from file upload or webcam
+      // Handle image from file input or webcam
       let imageFile: File | null = null;
 
-      if (selectedImage) {
+      if (personDetails.image) {
         // If image was uploaded from file input
-        imageFile = selectedImage;
-        console.log(
-          'Using uploaded image file:',
-          imageFile.name,
-          imageFile.size,
-          'bytes',
-          imageFile.type
-        );
+        imageFile = personDetails.image;
       } else if (capturedImage) {
         // If image was captured from webcam, convert base64 to file
         console.log('Converting webcam image from base64 to file');
@@ -404,12 +341,6 @@ function AddDisabled() {
           imageFile = new File([blob], `webcam_capture_${Date.now()}.jpg`, {
             type: 'image/jpeg',
           });
-          console.log(
-            'Created file from webcam image:',
-            imageFile.size,
-            'bytes',
-            imageFile.type
-          );
         } catch (error) {
           console.error('Error converting base64 to file:', error);
           throw new Error(
@@ -419,149 +350,37 @@ function AddDisabled() {
       }
 
       if (imageFile) {
-        // Append the file with name 'file' as expected by the backend
         formDataToSend.append('file', imageFile);
-
-        console.log('Image file appended to form data:', {
-          name: imageFile.name,
-          size: imageFile.size,
-          type: imageFile.type,
-          lastModified: new Date(imageFile.lastModified).toISOString(),
-        });
-
-        // For debugging - log all form data entries
-        console.log('Form data entries being sent to server:');
-        for (const pair of formDataToSend.entries()) {
-          console.log(
-            pair[0],
-            pair[1] instanceof File
-              ? `[File: ${pair[1].name}, ${pair[1].size} bytes]`
-              : pair[1]
-          );
-        }
       } else {
-        // No image was provided
-        throw new Error('Please provide an image');
+        throw new Error('Please provide a photo');
       }
 
-      // Debug log
-      console.log('Sending registration with image to API');
-
-      // Use the registration API service
+      // Use the registration API service instead of direct fetch
       const responseData = await registrationApi.registerUser(formDataToSend);
-      console.log('Registration successful:', responseData);
 
-      // Show success message and store the user ID from response
+      // Handle successful registration
       setSubmitSuccess(true);
 
-      // Use the ID from the response to identify the user
-      const userId = responseData?.user_id;
+      // Show a success message with the name
       const userName = responseData?.user?.name || personDetails.name;
       toast.success(`${userName} registered successfully!`);
 
-      console.log(`User registered with ID: ${userId || 'Not available'}`);
-      console.log(
-        `Image path: ${responseData?.user?.image_path || 'Not available'}`
-      );
-      console.log(`Face ID: ${responseData?.face_id || 'Not available'}`);
-
-      // Fix the user verification section
-      if (userId) {
-        // Try to verify the registration up to 3 times with delays
-        let user: UserWithFaceId | null = null;
-        let retryCount = 0;
-        const maxRetries = 3;
-
-        while (retryCount < maxRetries) {
-          try {
-            const verificationData =
-              await registrationApi.verifyRegistration(userId);
-            // Cast the user to our interface that includes face_id
-            user = verificationData.user as UserWithFaceId;
-
-            if (user && user.face_id) {
-              console.log(
-                'User verification successful with face_id:',
-                user.face_id
-              );
-              break;
-            } else {
-              console.log(
-                `Verification attempt ${retryCount + 1}: No face_id yet`
-              );
-              retryCount++;
-
-              if (retryCount < maxRetries) {
-                // Wait before retrying (increasing delay with each retry)
-                const delay = 1000 * retryCount;
-                console.log(`Waiting ${delay}ms before retrying...`);
-                await new Promise((resolve) => setTimeout(resolve, delay));
-              }
-            }
-          } catch (error) {
-            console.error('Error during verification:', error);
-            retryCount++;
-            if (retryCount >= maxRetries) break;
-          }
-        }
-
-        if (!user || !user.face_id) {
-          console.warn(
-            'User verification completed but no face_id was generated'
-          );
-          // Try to trigger face processing again by sending a verification request
-          try {
-            if (imageFile) {
-              console.log(
-                'Attempting to trigger face processing via verify-face endpoint'
-              );
-              const verifyFormData = new FormData();
-              verifyFormData.append('file', imageFile);
-
-              const verifyResponse = await fetch(
-                `${BASE_API_URL}/api/verify-face`,
-                {
-                  method: 'POST',
-                  body: verifyFormData,
-                }
-              );
-
-              if (verifyResponse.ok) {
-                console.log(
-                  'Face verification successful, this may help generate face_id'
-                );
-              }
-            }
-          } catch (verifyError) {
-            console.error('Error during face verification:', verifyError);
-          }
-        }
-      } else {
-        console.warn('No user ID received from server, skipping verification');
-      }
-
-      // Reset form after success
+      // Reset form data after animation plays
       setTimeout(() => {
         setPersonDetails(initialFormData);
         setCapturedImage(null);
-        setSelectedImage(null);
-        setPreviewUrl('');
         setCurrentSection(1);
-        setFormErrors([]);
         setSubmitSuccess(false);
+        setLoading(false);
       }, 3000);
-    } catch (error) {
-      console.error('Error registering disabled person:', error);
-
-      // Display error in form
+    } catch (err) {
+      console.error('Registration error:', err);
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'An unknown error occurred during registration';
-
-      setFormErrors([errorMessage]);
+        err instanceof Error
+          ? err.message
+          : 'An error occurred during registration';
       toast.error(errorMessage);
-    } finally {
+      setFormErrors([errorMessage]);
       setLoading(false);
     }
   };
@@ -623,6 +442,16 @@ function AddDisabled() {
           >
             3
           </div>
+          <div className="w-16 h-1 bg-gray-300">
+            <div
+              className={`h-full ${currentSection >= 4 ? 'bg-purple-600' : 'bg-gray-300'}`}
+            ></div>
+          </div>
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(4)}`}
+          >
+            4
+          </div>
         </div>
       </div>
 
@@ -632,27 +461,48 @@ function AddDisabled() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-2xl font-bold mb-4">
-            Accompanying Person Report Submitted
-          </h2>
-          <p>
-            Thank you for submitting this report. The information has been
-            recorded successfully.
-          </p>
-          <p className="mt-4">
-            Case reference:{' '}
-            {Math.random().toString(36).substring(2, 10).toUpperCase()}
-          </p>
-          <button
-            onClick={clearForm}
-            className="mt-6 px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          <motion.div
+            className="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
           >
-            Submit Another Report
-          </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-10 w-10 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </motion.div>
+          <h2 className="text-2xl font-bold mb-4 text-center">
+            Registration Successful!
+          </h2>
+          <p className="text-center mb-6">
+            The information has been recorded successfully.
+          </p>
+          <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+            <motion.div
+              className="bg-purple-500 h-2 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: '100%' }}
+              transition={{ duration: 3, ease: 'linear' }}
+            />
+          </div>
+          <p className="text-center mt-4 text-white/70">
+            Starting new registration in a moment...
+          </p>
         </motion.div>
       ) : (
         <motion.form
-          onSubmit={handleSubmit}
+          onSubmit={handleFormSubmit}
           className="space-y-6 max-w-xl mx-auto 
              bg-white/20 backdrop-blur-lg 
              p-8 rounded-2xl 
@@ -800,6 +650,22 @@ function AddDisabled() {
                 onChange={handleInputChange}
               />
 
+              <SectionButtons onPrev={prevSection} onNext={nextSection} />
+            </motion.div>
+          )}
+
+          {currentSection === 4 && (
+            <motion.div
+              initial={{ x: 30, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="space-y-4"
+            >
+              <h3 className="text-lg font-semibold">Person's Photo</h3>
+              <p className="text-white/80">
+                Please upload a clear photo of the person's face. This will be
+                used for identification purposes.
+              </p>
+
               {/* Toggle between upload and camera capture */}
               <div className="flex items-center space-x-4 mb-4">
                 <button
@@ -807,10 +673,12 @@ function AddDisabled() {
                   onClick={handleToggleCamera}
                   className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
                 >
-                  {useCamera ? 'Switch to Upload' : 'Switch to Camera'}
+                  {personDetails.useCamera
+                    ? 'Switch to Upload'
+                    : 'Switch to Camera'}
                 </button>
                 <div>
-                  {useCamera ? (
+                  {personDetails.useCamera ? (
                     <FaCamera className="text-white text-2xl" />
                   ) : (
                     <FaUpload className="text-white text-2xl" />
@@ -819,40 +687,35 @@ function AddDisabled() {
               </div>
 
               {/* Upload image option */}
-              {!useCamera ? (
+              {!personDetails.useCamera ? (
                 <div className="flex flex-col items-center">
-                  <label className="block text-white font-semibold mb-2">
-                    Upload Person's Photo
-                  </label>
                   <div
                     className="cursor-pointer"
                     onClick={() =>
                       document.getElementById('fileInput')?.click()
                     }
                   >
-                    <AnimatedFaceIcon size="md" text="Click to upload" />
+                    <AnimatedFaceIcon
+                      size="md"
+                      text="Click to upload"
+                      color="#ffff"
+                    />
                   </div>
                   <input
                     id="fileInput"
                     type="file"
-                    accept="image/*"
+                    name="image"
                     onChange={handleFileSelect}
+                    accept="image/jpeg,image/png"
                     className="hidden"
                   />
-                  {previewUrl && (
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="mt-2 w-32 h-32 object-cover rounded-md shadow-md"
-                    />
-                  )}
                 </div>
               ) : (
                 // Camera capture section
                 <div className="flex flex-col items-center text-white">
                   {!capturedImage ? (
                     <>
-                      <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-purple-400">
+                      <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-pink-400">
                         <Webcam
                           audio={false}
                           ref={webcamRef}
@@ -862,42 +725,152 @@ function AddDisabled() {
                             height: 480,
                             facingMode: 'user',
                           }}
+                          className="w-full"
                         />
-                        <button
-                          type="button"
-                          onClick={captureImage}
-                          className="absolute bottom-4 right-4 bg-purple-600 text-white p-2 rounded"
-                        >
-                          <FaCamera className="text-white text-2xl" />
-                        </button>
+                        <div className="absolute inset-0 pointer-events-none">
+                          {/* Face alignment guide */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-64 h-64 border-2 border-pink-400 rounded-full opacity-50"></div>
+                          </div>
+                          <svg
+                            width="100%"
+                            height="100%"
+                            viewBox="0 0 100 100"
+                            preserveAspectRatio="none"
+                          >
+                            <path
+                              d="M20,20 L20,30 L30,30 M70,30 L80,30 L80,20 M80,80 L80,70 L70,70 M30,70 L20,70 L20,80"
+                              stroke="#ec4899"
+                              strokeWidth="2"
+                              fill="none"
+                            />
+                          </svg>
+                        </div>
                       </div>
+
                       <button
                         type="button"
-                        onClick={retakePhoto}
-                        className="mt-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                        className="mt-4 px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center mx-auto"
+                        onClick={captureImage}
                       >
-                        Retake Photo
+                        <FaCamera className="mr-2" /> Capture Photo
                       </button>
                     </>
                   ) : (
-                    <div className="w-32 h-32">
-                      <img
-                        src={capturedImage}
-                        alt="Captured"
-                        className="object-cover w-full h-full rounded-md shadow-md"
-                      />
+                    <>
+                      <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-green-400">
+                        <img
+                          src={capturedImage}
+                          alt="Captured"
+                          className="w-full"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="bg-green-500 text-white p-2 rounded-full"
+                          >
+                            ✓
+                          </motion.div>
+                        </div>
+                      </div>
                       <button
                         type="button"
+                        className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
                         onClick={retakePhoto}
-                        className="absolute top-2 right-2 bg-purple-600 text-white p-2 rounded"
                       >
-                        <FaRedo className="text-white text-2xl" />
+                        <FaRedo className="mr-2" /> Retake Photo
                       </button>
-                    </div>
+                    </>
                   )}
                 </div>
               )}
+
+              {/* Image preview - only show for uploaded images */}
+              {personDetails.image && !personDetails.useCamera && (
+                <div className="mt-4 flex justify-center">
+                  <img
+                    src={URL.createObjectURL(personDetails.image)}
+                    alt="Preview"
+                    className="max-w-full max-h-64 rounded shadow-md"
+                  />
+                </div>
+              )}
+
               <SectionButtons onPrev={prevSection} />
+
+              {/* Submit Button */}
+              <div className="mt-8 flex flex-col items-center">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`
+                      px-8 py-3 rounded-lg font-semibold
+                      flex items-center justify-center
+                      transition-all duration-300
+                      ${
+                        loading
+                          ? 'bg-pink-400 cursor-not-allowed'
+                          : 'bg-pink-600 hover:bg-pink-700 shadow-lg hover:shadow-pink-500/30'
+                      }
+                      text-white min-w-[200px]
+                      relative overflow-hidden
+                    `}
+                >
+                  {loading && (
+                    <motion.div
+                      className="absolute inset-0 bg-pink-500 opacity-30"
+                      initial={{ width: 0 }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 1.5 }}
+                    />
+                  )}
+
+                  {loading ? (
+                    <div className="flex items-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing...
+                    </div>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Submit Registration
+                    </>
+                  )}
+                </button>
+              </div>
             </motion.div>
           )}
         </motion.form>

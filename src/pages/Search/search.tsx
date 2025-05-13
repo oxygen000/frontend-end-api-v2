@@ -20,6 +20,9 @@ import {
 
 const API_URL = 'https://backend-fast-api-ai.fly.dev/api/users';
 
+// Add a new constant for all users endpoint
+const ALL_USERS_URL = 'https://backend-fast-api-ai.fly.dev/api/users/all';
+
 interface User {
   id: string;
   name: string;
@@ -109,7 +112,8 @@ const Search: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(API_URL);
+      // Use the all users endpoint instead
+      const response = await axios.get(ALL_USERS_URL);
 
       if (response.data && Array.isArray(response.data)) {
         setData(response.data);
@@ -128,6 +132,30 @@ const Search: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+
+      // If the all users endpoint fails, try the regular endpoint as fallback
+      if (retryCount === 0) {
+        try {
+          const fallbackResponse = await axios.get(API_URL);
+          if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
+            setData(fallbackResponse.data);
+            setFilteredData(fallbackResponse.data);
+            setLoading(false);
+            return;
+          } else if (
+            fallbackResponse.data &&
+            fallbackResponse.data.users &&
+            Array.isArray(fallbackResponse.data.users)
+          ) {
+            setData(fallbackResponse.data.users);
+            setFilteredData(fallbackResponse.data.users);
+            setLoading(false);
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('Fallback endpoint also failed:', fallbackError);
+        }
+      }
 
       // Implement retry logic
       if (retryCount < maxRetries) {
@@ -320,6 +348,7 @@ const Search: React.FC = () => {
 
   const handleUserClick = async (user: ApiUser) => {
     try {
+      // Try to get detailed user info first from the specific user endpoint
       const response = await axios.get(`${API_URL}/${user.id}`);
       if (response.data) {
         setSelectedUser(response.data);
@@ -327,7 +356,9 @@ const Search: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching user details:', error);
-      setError('Failed to load user details');
+      // If fetching detailed info fails, just use the user data we already have
+      setSelectedUser(user);
+      setShowModal(true);
     }
   };
 
@@ -340,6 +371,9 @@ const Search: React.FC = () => {
     { value: '', label: 'All Form Types' },
     { value: 'child', label: 'Child' },
     { value: 'disabled', label: 'Disabled' },
+    { value: 'employee', label: 'Employee' },
+    { value: 'student', label: 'Student' },
+    { value: 'visitor', label: 'Visitor' },
     { value: 'male', label: 'Male' },
     { value: 'female', label: 'Female' },
   ];
@@ -526,7 +560,14 @@ const Search: React.FC = () => {
   return (
     <div className="p-6 bg-white/10 backdrop-blur-md rounded-lg">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-white">Search Users</h2>
+        <div>
+          <h2 className="text-2xl font-semibold text-white">
+            All Registered Users
+          </h2>
+          <p className="text-white/70 mt-1">
+            View and search through all registered profiles in the system
+          </p>
+        </div>
         <button
           onClick={handleRefresh}
           className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -542,7 +583,7 @@ const Search: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={handleSearch}
-            placeholder="Search by name, ID, phone, or address"
+            placeholder="Search any registered user by name, ID, phone, department, or address"
             className="w-full p-3 pl-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <svg
@@ -649,8 +690,16 @@ const Search: React.FC = () => {
           Found{' '}
           <span className="font-medium text-white">{filteredData.length}</span>{' '}
           {filteredData.length === 1 ? 'user' : 'users'}
+          {searchTerm === '' &&
+            filters.category === '' &&
+            filters.formType === '' &&
+            !filters.hasPhone &&
+            !filters.hasNationalId && (
+              <span className="ml-2 text-blue-300">
+                
+              </span>
+            )}
         </div>
-
       </div>
 
       {/* Display filtered data with improved animations */}
@@ -673,11 +722,8 @@ const Search: React.FC = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  whileHover="hover"
                   whileTap="tap"
                   layoutId={user.id}
-                  onClick={() => handleUserClick(user)}
-                  className="cursor-pointer bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/30"
                 >
                   <Card user={adaptUser(user)} />
                 </motion.div>
