@@ -509,7 +509,7 @@ const AddNormalMan = () => {
         setCapturedImage(null);
         setCurrentSection(1);
         setSubmitSuccess(false);
-      }, 3000);
+      }, 1000);
 
       // Additional verification or processing can go here
     } catch (err) {

@@ -521,78 +521,54 @@ function AddNormalChild() {
         setCurrentSection(1);
         setSubmitSuccess(false);
         setIsSubmitting(false);
-      }, 3000);
+      }, 1000);
 
       // Verify the registration only if we have a userId with a proper format (not temp-)
       if (userId && !userId.startsWith('temp-')) {
-        // Try to verify the registration up to 3 times with delays
-        // This helps ensure the backend has time to process the face encoding
-        let user: UserWithFaceId | null = null;
-        let retryCount = 0;
-        const maxRetries = 3;
+        // Try to verify the registration without delays
+        try {
+          const verificationData =
+            await registrationApi.verifyRegistration(userId);
+          const user = verificationData.user as UserWithFaceId;
 
-        while (retryCount < maxRetries) {
-          try {
-            const verificationData =
-              await registrationApi.verifyRegistration(userId);
-            user = verificationData.user as UserWithFaceId;
-
-            if (user && user.face_id) {
-              console.log(
-                'User verification successful with face_id:',
-                user.face_id
-              );
-              break;
-            } else {
-              console.log(
-                `Verification attempt ${retryCount + 1}: No face_id yet`
-              );
-              retryCount++;
-
-              if (retryCount < maxRetries) {
-                // Wait before retrying (increasing delay with each retry)
-                const delay = 1000 * retryCount;
-                console.log(`Waiting ${delay}ms before retrying...`);
-                await new Promise((resolve) => setTimeout(resolve, delay));
-              }
-            }
-          } catch (error) {
-            console.error('Error during verification:', error);
-            retryCount++;
-            if (retryCount >= maxRetries) break;
+          if (user && user.face_id) {
+            console.log(
+              'User verification successful with face_id:',
+              user.face_id
+            );
+          } else {
+            console.log('User verified but no face_id yet');
           }
+        } catch (error) {
+          console.error('Error during verification:', error);
         }
 
-        if (!user || !user.face_id) {
-          console.warn(
-            'User verification completed but no face_id was generated'
-          );
-          // Try to trigger face processing again by sending a verification request
-          try {
-            if (imageFile) {
-              console.log(
-                'Attempting to trigger face processing via verify-face endpoint'
-              );
-              const verifyFormData = new FormData();
-              verifyFormData.append('file', imageFile);
+        // If verification didn't give us a face_id, try to trigger face processing
+        try {
+          if (imageFile) {
+            console.log(
+              'Attempting to trigger face processing via verify-face endpoint'
+            );
+            const verifyFormData = new FormData();
+            verifyFormData.append('file', imageFile);
 
-              const verifyResponse = await fetch(
-                `${BASE_API_URL}/api/verify-face`,
-                {
-                  method: 'POST',
-                  body: verifyFormData,
+            fetch(`${BASE_API_URL}/api/verify-face`, {
+              method: 'POST',
+              body: verifyFormData,
+            })
+              .then((response) => {
+                if (response.ok) {
+                  console.log(
+                    'Face verification successful, this may help generate face_id'
+                  );
                 }
-              );
-
-              if (verifyResponse.ok) {
-                console.log(
-                  'Face verification successful, this may help generate face_id'
-                );
-              }
-            }
-          } catch (verifyError) {
-            console.error('Error during face verification:', verifyError);
+              })
+              .catch((verifyError) => {
+                console.error('Error during face verification:', verifyError);
+              });
           }
+        } catch (verifyError) {
+          console.error('Error during face verification:', verifyError);
         }
       } else {
         console.warn(
@@ -740,7 +716,7 @@ function AddNormalChild() {
                 value={formData.name}
                 onChange={handleInputChange}
               />
-             
+
               <Input
                 label={t('registration.dateOfBirth')}
                 name="dob"

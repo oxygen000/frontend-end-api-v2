@@ -149,63 +149,58 @@ function Profiler() {
 
   // Fetch user data when component mounts
   useEffect(() => {
-    // Short delay to simulate data loading
-    const timer = setTimeout(() => {
-      if (!id) {
-        setError(t('profile.errors.noId', 'No user ID provided'));
-        setLoading(false);
-        return;
+    // Load user data immediately without delay
+    if (!id) {
+      setError(t('profile.errors.noUser', 'No user specified'));
+      setLoading(false);
+      return;
+    }
+
+    // Check if this is a temporary ID from registration
+    const isTempId = id.startsWith('temp-');
+    setIsTemporaryId(isTempId);
+
+    let user: ProfileUser | undefined;
+
+    if (isTempId) {
+      // For temporary IDs, get from registrationData
+      const regData = registrationData[id];
+      if (regData) {
+        user = {
+          id: id,
+          name: regData.name,
+          username: regData.nickname || regData.name,
+          // Use a placeholder image for temp users
+          photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(regData.name)}&background=random`,
+          registrationDate: new Date().toISOString(),
+        };
+        setRegistrationDetails(regData);
+      }
+    } else {
+      // Try to find by numeric ID first
+      const numericId = parseInt(id);
+      if (!isNaN(numericId)) {
+        user = profileUsers.find((u) => u.id === numericId);
       }
 
-      // Check if it's a temporary ID (from registration)
-      const isTempId = id.startsWith('temp-');
-      setIsTemporaryId(isTempId);
-
-      // Look for user in our mock data
-      let user: ProfileUser | undefined;
-
-      if (isTempId) {
-        // For temporary IDs, get from registrationData
-        const regData = registrationData[id];
-        if (regData) {
-          user = {
-            id: id,
-            name: regData.name,
-            username: regData.nickname || regData.name,
-            // Use a placeholder image for temp users
-            photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(regData.name)}&background=random`,
-            registrationDate: new Date().toISOString(),
-          };
-          setRegistrationDetails(regData);
-        }
-      } else {
-        // Try to find by numeric ID first
-        const numericId = parseInt(id);
-        if (!isNaN(numericId)) {
-          user = profileUsers.find((u) => u.id === numericId);
-        }
-
-        // If not found by numeric ID, try string ID
-        if (!user) {
-          user = profileUsers.find((u) => u.id.toString() === id);
-        }
-
-        // If found by string ID, check if we have registration data
-        if (user && registrationData[id]) {
-          setRegistrationDetails(registrationData[id]);
-        }
+      // If not found by numeric ID, try string ID
+      if (!user) {
+        user = profileUsers.find((u) => u.id.toString() === id);
       }
 
-      if (user) {
-        setUserData(user);
-        setLoading(false);
-      } else {
-        setError(t('profile.errors.userNotFound', 'User not found'));
-        setLoading(false);
+      // If found by string ID, check if we have registration data
+      if (user && registrationData[id]) {
+        setRegistrationDetails(registrationData[id]);
       }
-    }, 800);
+    }
 
-    return () => clearTimeout(timer);
+    if (user) {
+      setUserData(user);
+      setLoading(false);
+    } else {
+      setError(t('profile.errors.userNotFound', 'User not found'));
+      setLoading(false);
+    }
   }, [id, t]);
 
   // Helper function to format date

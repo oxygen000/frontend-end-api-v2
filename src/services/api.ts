@@ -6,7 +6,7 @@ export const API_URL = 'https://backend-fast-api-ai.fly.dev/api';
 // Create axios instance with common configuration
 export const api = axios.create({
   baseURL: API_URL,
-  timeout: 60000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -311,7 +311,7 @@ export const registrationApi = {
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `${API_URL}/register/upload`);
-        xhr.timeout = 100000; // 3 minutes
+        xhr.timeout = 30000;
 
         xhr.onload = function () {
           console.log('XHR status:', xhr.status);
@@ -446,7 +446,7 @@ export const registrationApi = {
                 headers: {
                   'Content-Type': 'multipart/form-data',
                 },
-                timeout: 180000, // 3 minutes
+                timeout: 30000,
               }
             );
 
