@@ -143,7 +143,8 @@
       "student": "Student",
       "visitor": "Visitor",
       "male": "Male",
-      "female": "Female"
+      "female": "Female",
+      "man": "Man"
     },
     "sortBy": "Sort By",
     "sortFields": {
@@ -185,6 +186,7 @@
     "male": "Male",
     "job":"Job",
     "female": "Female",
+    "vehicleInfo":"Vehicle Information",
     "nationalId": "National ID",
     "phoneNumber": "Phone Number",
     "address": "Address",
@@ -254,12 +256,12 @@
     "ageMinimum": "Must be at least 18 years old",
     "dobFuture": "Date of Birth cannot be in the future",
     "nationalIdRequired": "National ID is required",
-    "nationalIdDigits": "National ID must be 10 digits",
+    "nationalIdDigits": "National ID must be 14 digits",
     "categoryRequired": "Category is required",
     "phoneRequired": "Phone Number is required",
-    "phoneDigits": "Phone Number must be 10 digits",
+    "phoneDigits": "Phone Number must be 11 digits",
     "phoneCompanyRequired": "Telecom Company is required",
-    "secondPhoneDigits": "Second Phone Number must be 10 digits",
+    "secondPhoneDigits": "Second Phone Number must be 11 digits",
     "caseDetailsRequired": "Case Details are required when criminal record exists",
     "policeStationRequired": "Police Station is required when criminal record exists",
     "caseNumberRequired": "Case Number is required when criminal record exists",

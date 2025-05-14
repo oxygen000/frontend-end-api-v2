@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from 'react-router-dom'; // Import Link from react-router-dom
-import { FaMale, FaFemale } from 'react-icons/fa'; // Import icons from react-icons // Import icons from react-icons
+import {  FaWheelchair, FaChild } from 'react-icons/fa'; // Import icons from react-icons // Import icons from react-icons
 
 
 interface PopupChoiceSearchProps {
@@ -25,15 +25,17 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
 
         {/* Gender options */}
         <div className="grid grid-cols-2 gap-4">
-          <Link to="/Search"
-            className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-blue-700 hover:bg-blue-800"
+        <Link  to="/Search"
+            className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-purple-600 hover:bg-purple-700"
+            aria-label="Disabled"
           >
-            <FaMale />
+            <FaWheelchair />
           </Link>
-          <Link to="/Search"
-            className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-pink-600 hover:bg-pink-700"
+          <Link  to="/Search"
+            className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-yellow-600 hover:bg-yellow-700"
+            aria-label="Child"
           >
-            <FaFemale />
+            <FaChild />
           </Link>
         </div>
 

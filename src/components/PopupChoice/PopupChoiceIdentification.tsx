@@ -1,5 +1,5 @@
 import React from 'react'; // Import React
-import { FaMale, FaFemale, FaWheelchair, FaChild } from 'react-icons/fa'; // Import icons from react-icons // Import icons from react-icons
+import { FaMale, FaFemale } from 'react-icons/fa'; // Import icons from react-icons // Import icons from react-icons
 import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 
 interface PopupChoiceIdentificationProps {
@@ -26,7 +26,7 @@ const PopupChoiceIdentification: React.FC<PopupChoiceIdentificationProps> = ({
         <h2 className="text-xl font-bold text-white mb-4">{title}</h2>
 
         {/* Gender selection options with icons */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-2">
           <Link
             to="/identification"
             className={`${iconButtonStyle} bg-blue-700 hover:bg-blue-800`}
@@ -40,18 +40,7 @@ const PopupChoiceIdentification: React.FC<PopupChoiceIdentificationProps> = ({
           >
             <FaFemale />
           </Link>
-          <Link  to="/identification"
-            className={`${iconButtonStyle} bg-purple-600 hover:bg-purple-700`}
-            aria-label="Disabled"
-          >
-            <FaWheelchair />
-          </Link>
-          <Link  to="/identification"
-            className={`${iconButtonStyle} bg-yellow-600 hover:bg-yellow-700`}
-            aria-label="Child"
-          >
-            <FaChild />
-          </Link>
+         
         </div>
         <button
           onClick={onClose}

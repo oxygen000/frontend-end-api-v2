@@ -145,9 +145,9 @@ const AddNormalWoman = () => {
         errors.push(
           t('validation.nationalIdRequired', 'National ID is required')
         );
-      } else if (!/^\d{10}$/.test(formData.national_id)) {
+      } else if (!/^\d{14}$/.test(formData.national_id)) {
         errors.push(
-          t('validation.nationalIdDigits', 'National ID must be 10 digits')
+          t('validation.nationalIdDigits', 'National ID must be 14 digits')
         );
       }
 
@@ -158,9 +158,9 @@ const AddNormalWoman = () => {
       // Contact Info validation
       if (!formData.phone_number.trim()) {
         errors.push(t('validation.phoneRequired', 'Phone Number is required'));
-      } else if (!/^\d{10}$/.test(formData.phone_number)) {
+      } else if (!/^\d{11}$/.test(formData.phone_number)) {
         errors.push(
-          t('validation.phoneDigits', 'Phone Number must be 10 digits')
+          t('validation.phoneDigits', 'Phone Number must be 11 digits')
         );
       }
 
@@ -172,12 +172,12 @@ const AddNormalWoman = () => {
 
       if (
         formData.second_phone_number &&
-        !/^\d{10}$/.test(formData.second_phone_number)
+        !/^\d{11}$/.test(formData.second_phone_number)
       ) {
         errors.push(
           t(
             'validation.secondPhoneDigits',
-            'Second Phone Number must be 10 digits'
+            'Second Phone Number must be 11 digits'
           )
         );
       }
@@ -243,14 +243,14 @@ const AddNormalWoman = () => {
           }
         }
       }
-    } else if (currentSection === 5) {
+    } else if (currentSection === 6) {
       // Image validation
       if (!formData.image && !capturedImage) {
         errors.push(t('validation.photoRequired', 'Photo is required'));
       } else {
         const imageToCheck = formData.image || capturedImage;
         if (imageToCheck instanceof File) {
-          if (imageToCheck.size > 5 * 1024 * 1024) {
+          if (imageToCheck.size > 6 * 1024 * 1024) {
             errors.push(
               t(
                 'validation.imageSizeLimit',
@@ -566,7 +566,7 @@ const AddNormalWoman = () => {
       {!submitSuccess && (
         <div className="flex justify-center mt-6">
           <div className="flex items-center space-x-4">
-            {[1, 2, 3, 4, 5].map((step, idx) => (
+            {[1, 2, 3, 4, 5, 6].map((step, idx) => (
               <React.Fragment key={step}>
                 {idx > 0 && (
                   <div className="w-16 h-1 bg-gray-300">
@@ -841,8 +841,58 @@ const AddNormalWoman = () => {
               <SectionButtons onPrev={prevSection} onNext={nextSection} />
             </motion.div>
           )}
+{currentSection === 5 && (
+             <motion.div
+                initial={{ x: 30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="space-y-4"
+              >
+<h3 className="text-lg font-semibold text-white mb-4">
+                  {t('registration.vehicleInfo', 'Vehicle Information')}
+                </h3>
+                <Input
+                  label={t('registration.vehicleModel', 'Vehicle Model')}
+                  name="vehicle_model"
+                  type="text"
+                  value={formData.vehicle_model}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label={t(
+                    'registration.vehicleColor',
+                    'Vehicle Color'
+                  )}
+                  name="vehicle_color"
+                  value={formData.vehicle_color}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label={t('registration.chassisNumber', 'Chassis Number')}
+                  name="chassis_number"
+                  value={formData.chassis_number}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label={t('registration.vehicleNumber', 'Vehicle Number')}
+                  name="vehicle_number"
+                  type="text"
+                  value={formData.vehicle_number}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label={t('registration.licenseExpiration', 'License Expiration')}
+                  name="license_expiration"
+                  type="date"
+                  value={formData.license_expiration}
+                  onChange={handleInputChange}
+                />
+                <SectionButtons onPrev={prevSection} onNext={nextSection} />
+              </motion.div>
+            )}
 
-          {currentSection === 5 && (
+
+
+          {currentSection === 6 && (
             <motion.div
               initial={{ x: 30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}

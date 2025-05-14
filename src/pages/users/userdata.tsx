@@ -16,7 +16,6 @@ import {
   FiFileText,
   FiActivity,
   FiTrash2,
-  FiEye,
 } from 'react-icons/fi';
 import { FaIdCard, FaUserTag, FaFingerprint, FaCar } from 'react-icons/fa';
 import axios from 'axios';
@@ -1020,15 +1019,7 @@ function Userdata() {
               {t('users.actions', 'Actions')}
             </h2>
 
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => navigate(`/identification?id=${user.id}`)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600/70 to-blue-700/70 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-colors duration-300 flex items-center justify-center"
-              >
-                <FiEye className={`${isRTL ? 'mr-2' : 'ml-2'}`} />{' '}
-                {t('users.verifyIdentity', 'Verify Identity')}
-              </button>
-
+            <div className="flex flex-col gap-3">        
               <button
                 onClick={() =>
                   navigate(

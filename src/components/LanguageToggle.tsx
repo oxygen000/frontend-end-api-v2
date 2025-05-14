@@ -34,10 +34,12 @@ function LanguageToggle() {
       {language === 'en' ? (
         <>
           <FaGlobeAfrica className="text-white" />
+          <span className="text-white">العربية</span>
         </>
       ) : (
         <>
           <FaGlobeAmericas className="text-white" />
+          <span className="text-white">English</span>
         </>
       )}
     </button>

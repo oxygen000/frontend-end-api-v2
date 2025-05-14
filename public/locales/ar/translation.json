@@ -143,7 +143,8 @@
       "student": "طالب",
       "visitor": "زائر",
       "male": "ذكر",
-      "female": "أنثى"
+      "female": "أنثى",
+      "man": "رجل"
     },
     "sortBy": "ترتيب حسب",
     "sortFields": {
@@ -184,6 +185,27 @@
     "gender": "الجنس",
     "male": "ذكر",
     "job":"العمل",
+    "vehicleInfo":"معلومات المركبة",
+    "licensePlate":"لوحة الترخيص",
+    "vehicleModel":"طراز المركبة",
+    "vehicleColor":"لون المركبة",
+    "chassisNumber":"رقم الشاسيه",
+    "vehicleNumber":"رقم المركبة",
+    "licenseExpiration":"انتهاء الترخيص",
+    "travelInfo":"معلومات السفر",
+    "travelDate":"تاريخ السفر",
+    "travelDestination":"وجهة السفر",
+    "arrivalAirport":"مطار الوصول",
+    "arrivalDate":"تاريخ الوصول",
+    "flightNumber":"رقم الرحلة",
+    "returnDate":"تاريخ العودة",
+    "hasCriminalRecord":"لديه سجل جنائي",
+    "caseDetails":"تفاصيل القضية",
+    "caseNumber":"رقم القضية",
+    "judgment":"الحكم",
+    "accusation":"التهمة",
+    "commonInfo":"المعلومات العامة",
+
     "female": "أنثى",
     "nationalId": "الرقم القومي",
     "phoneNumber": "رقم الهاتف",
@@ -233,7 +255,11 @@
     "invalidPhone": "يرجى إدخال رقم هاتف صالح",
     "invalidDate": "يرجى إدخال تاريخ صالح",
     "invalidPassword": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
-    "passwordMismatch": "كلمات المرور غير متطابقة"
+    "passwordMismatch": "كلمات المرور غير متطابقة",
+    "nationalIdDigits": "يجب أن يكون الرقم القومي 14 رقمًا",
+    "phoneDigits": "يجب أن يكون رقم الهاتف 11 رقمًا",
+    "secondPhoneDigits": "يجب أن يكون رقم الهاتف الثانوي 11 رقمًا"
+    
   },
   "auth": {
     "login": "تسجيل الدخول",
