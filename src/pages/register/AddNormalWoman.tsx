@@ -542,7 +542,7 @@ const AddNormalWoman = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <Link
         to="/home"
         className="inline-flex items-center text-white hover:text-pink-300 transition-colors"
@@ -564,19 +564,19 @@ const AddNormalWoman = () => {
 
       {/* Form Progress Indicator - Hide when showing success */}
       {!submitSuccess && (
-        <div className="flex justify-center mt-6">
-          <div className="flex items-center space-x-4">
+        <div className="flex justify-center mt-4 sm:mt-6 overflow-x-auto py-2">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
             {[1, 2, 3, 4, 5, 6].map((step, idx) => (
               <React.Fragment key={step}>
                 {idx > 0 && (
-                  <div className="w-16 h-1 bg-gray-300">
+                  <div className="w-6 sm:w-10 md:w-16 h-1 bg-gray-300">
                     <div
                       className={`h-full ${currentSection >= step ? 'bg-pink-600' : 'bg-gray-300'}`}
                     ></div>
                   </div>
                 )}
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 text-xs sm:text-sm md:text-base ${
                     currentSection === step
                       ? 'bg-pink-600 text-white scale-110'
                       : currentSection > step
@@ -605,12 +605,12 @@ const AddNormalWoman = () => {
       ) : (
         <motion.form
           onSubmit={handleFormSubmit}
-          className="max-w-2xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(255,105,180,0.3)] text-white border border-white/30 space-y-8"
+          className="w-full max-w-2xl mx-auto bg-white/20 backdrop-blur-lg p-4 sm:p-6 md:p-10 mt-4 sm:mt-6 rounded-xl sm:rounded-2xl shadow-[0_0_30px_5px_rgba(255,105,180,0.3)] text-white border border-white/30 space-y-4 sm:space-y-8"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold text-center mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">
             {t('forms.woman.title', 'Female Registration')}
           </h2>
 
@@ -626,7 +626,7 @@ const AddNormalWoman = () => {
             >
               <ul className="list-disc pl-5">
                 {formErrors.map((error, index) => (
-                  <li key={index} className="text-red-200">
+                  <li key={index} className="text-red-200 text-sm sm:text-base">
                     {error}
                   </li>
                 ))}
@@ -639,7 +639,7 @@ const AddNormalWoman = () => {
             <motion.div
               initial={{ x: -30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
               <Input
                 label={t('registration.fullName', 'Name')}
@@ -689,9 +689,9 @@ const AddNormalWoman = () => {
               animate="visible"
               exit="exit"
               transition={transition}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {t('registration.contactInfo', 'Contact Information')}
               </h3>
               <Input
@@ -701,14 +701,14 @@ const AddNormalWoman = () => {
                 onChange={handleInputChange}
               />
               <div>
-                <label className="block font-medium mb-1">
+                <label className="block font-medium mb-1 text-sm sm:text-base">
                   {t('registration.phoneCompany', 'Telecom Company')}
                 </label>
                 <select
                   name="phone_company"
                   value={formData.phone_company}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white/10 text-black border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full px-3 sm:px-4 py-2 bg-white/10 text-black border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm sm:text-base"
                 >
                   <option value="">
                     {t('common.select', 'Select Company')}
@@ -736,16 +736,16 @@ const AddNormalWoman = () => {
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3 sm:space-x-4">
                 <input
                   type="checkbox"
                   checked={formData.has_criminal_record}
                   onChange={handleToggleCriminalRecord}
-                  className="h-5 w-5"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                 />
-                <label>
+                <label className="text-sm sm:text-base">
                   {t('registration.hasCriminalRecord', 'Has Criminal Record')}
                 </label>
               </div>
@@ -791,9 +791,9 @@ const AddNormalWoman = () => {
             <motion.div
               initial={{ x: 30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <h3 className="text-lg font-semibold text-white mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-2 sm:mb-4">
                 {t('registration.travelInfo', 'Travel Information')}
               </h3>
               <Input
@@ -841,69 +841,68 @@ const AddNormalWoman = () => {
               <SectionButtons onPrev={prevSection} onNext={nextSection} />
             </motion.div>
           )}
-{currentSection === 5 && (
-             <motion.div
-                initial={{ x: 30, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="space-y-4"
-              >
-<h3 className="text-lg font-semibold text-white mb-4">
-                  {t('registration.vehicleInfo', 'Vehicle Information')}
-                </h3>
-                <Input
-                  label={t('registration.vehicleModel', 'Vehicle Model')}
-                  name="vehicle_model"
-                  type="text"
-                  value={formData.vehicle_model}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label={t(
-                    'registration.vehicleColor',
-                    'Vehicle Color'
-                  )}
-                  name="vehicle_color"
-                  value={formData.vehicle_color}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label={t('registration.chassisNumber', 'Chassis Number')}
-                  name="chassis_number"
-                  value={formData.chassis_number}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label={t('registration.vehicleNumber', 'Vehicle Number')}
-                  name="vehicle_number"
-                  type="text"
-                  value={formData.vehicle_number}
-                  onChange={handleInputChange}
-                />
-                <Input
-                  label={t('registration.licenseExpiration', 'License Expiration')}
-                  name="license_expiration"
-                  type="date"
-                  value={formData.license_expiration}
-                  onChange={handleInputChange}
-                />
-                <SectionButtons onPrev={prevSection} onNext={nextSection} />
-              </motion.div>
-            )}
 
-
+          {currentSection === 5 && (
+            <motion.div
+              initial={{ x: 30, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="space-y-3 sm:space-y-4"
+            >
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-2 sm:mb-4">
+                {t('registration.vehicleInfo', 'Vehicle Information')}
+              </h3>
+              <Input
+                label={t('registration.vehicleModel', 'Vehicle Model')}
+                name="vehicle_model"
+                type="text"
+                value={formData.vehicle_model}
+                onChange={handleInputChange}
+              />
+              <Input
+                label={t('registration.vehicleColor', 'Vehicle Color')}
+                name="vehicle_color"
+                value={formData.vehicle_color}
+                onChange={handleInputChange}
+              />
+              <Input
+                label={t('registration.chassisNumber', 'Chassis Number')}
+                name="chassis_number"
+                value={formData.chassis_number}
+                onChange={handleInputChange}
+              />
+              <Input
+                label={t('registration.vehicleNumber', 'Vehicle Number')}
+                name="vehicle_number"
+                type="text"
+                value={formData.vehicle_number}
+                onChange={handleInputChange}
+              />
+              <Input
+                label={t(
+                  'registration.licenseExpiration',
+                  'License Expiration'
+                )}
+                name="license_expiration"
+                type="date"
+                value={formData.license_expiration}
+                onChange={handleInputChange}
+              />
+              <SectionButtons onPrev={prevSection} onNext={nextSection} />
+            </motion.div>
+          )}
 
           {currentSection === 6 && (
             <motion.div
               initial={{ x: 30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
               {/* Toggle between upload and camera capture */}
-              <div className="flex items-center space-x-4 mb-4">
+              <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
                 <button
                   type="button"
                   onClick={handleToggleCamera}
-                  className="px-4 py-2 bg-pink-600 text-white rounded hover:bg-pink-700"
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-pink-600 text-white rounded hover:bg-pink-700 text-sm sm:text-base"
                 >
                   {formData.useCamera
                     ? t('registration.switchToUpload', 'Switch to Upload')
@@ -911,9 +910,9 @@ const AddNormalWoman = () => {
                 </button>
                 <div>
                   {formData.useCamera ? (
-                    <FaCamera className="text-white text-2xl" />
+                    <FaCamera className="text-white text-xl sm:text-2xl" />
                   ) : (
-                    <FaUpload className="text-white text-2xl" />
+                    <FaUpload className="text-white text-xl sm:text-2xl" />
                   )}
                 </div>
               </div>
@@ -921,7 +920,7 @@ const AddNormalWoman = () => {
               {/* Upload image option */}
               {!formData.useCamera ? (
                 <div className="flex flex-col items-center">
-                  <label className="block text-white font-semibold mb-2">
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
                     {t('registration.uploadImage', 'Upload Image')}
                   </label>
                   <div
@@ -947,10 +946,10 @@ const AddNormalWoman = () => {
                 </div>
               ) : (
                 // Camera capture section
-                <div className="flex flex-col items-center text-white">
+                <div className="flex flex-col items-center text-white w-full">
                   {!capturedImage ? (
                     <>
-                      <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-pink-400">
+                      <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md rounded-lg overflow-hidden border-2 border-pink-400">
                         <Webcam
                           audio={false}
                           ref={webcamRef}
@@ -965,7 +964,7 @@ const AddNormalWoman = () => {
                         <div className="absolute inset-0 pointer-events-none">
                           {/* Face alignment guide */}
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-64 h-64 border-2 border-pink-400 rounded-full opacity-50"></div>
+                            <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 border-2 border-pink-400 rounded-full opacity-50"></div>
                           </div>
                           <svg
                             width="100%"
@@ -985,7 +984,7 @@ const AddNormalWoman = () => {
 
                       <button
                         type="button"
-                        className="mt-4 px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center mx-auto"
+                        className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center mx-auto text-sm sm:text-base"
                         onClick={captureImage}
                       >
                         <FaCamera className="mr-2" />{' '}
@@ -994,7 +993,7 @@ const AddNormalWoman = () => {
                     </>
                   ) : (
                     <>
-                      <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-green-400">
+                      <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md rounded-lg overflow-hidden border-2 border-green-400">
                         <img
                           src={capturedImage}
                           alt="Captured"
@@ -1012,7 +1011,7 @@ const AddNormalWoman = () => {
                       </div>
                       <button
                         type="button"
-                        className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
+                        className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center text-sm sm:text-base"
                         onClick={retakePhoto}
                       >
                         <FaRedo className="mr-2" />{' '}
@@ -1025,11 +1024,11 @@ const AddNormalWoman = () => {
 
               {/* Image preview - only show for uploaded images */}
               {formData.image && !formData.useCamera && (
-                <div className="mt-4 flex justify-center">
+                <div className="mt-3 sm:mt-4 flex justify-center">
                   <img
                     src={URL.createObjectURL(formData.image)}
                     alt="Preview"
-                    className="max-w-full max-h-64 rounded shadow-md"
+                    className="max-w-full max-h-48 sm:max-h-64 rounded shadow-md"
                   />
                 </div>
               )}
@@ -1037,20 +1036,20 @@ const AddNormalWoman = () => {
               <SectionButtons onPrev={prevSection} />
 
               {/* Submit Button */}
-              <div className="mt-8 flex flex-col items-center">
+              <div className="mt-6 sm:mt-8 flex flex-col items-center">
                 <button
                   type="submit"
                   disabled={loading}
                   className={`
-                    px-8 py-3 rounded-lg font-semibold
+                    px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold
                     flex items-center justify-center
-                    transition-all duration-300
+                    transition-all duration-300 text-sm sm:text-base
                     ${
                       loading
                         ? 'bg-pink-400 cursor-not-allowed'
                         : 'bg-pink-600 hover:bg-pink-700 shadow-lg hover:shadow-pink-500/30'
                     }
-                    text-white min-w-[200px]
+                    text-white w-full sm:w-auto sm:min-w-[200px]
                     relative overflow-hidden
                   `}
                 >
@@ -1066,7 +1065,7 @@ const AddNormalWoman = () => {
                   {loading ? (
                     <div className="flex items-center">
                       <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        className="animate-spin -ml-1 mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -1091,7 +1090,7 @@ const AddNormalWoman = () => {
                     <>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 mr-2"
+                        className="h-4 w-4 sm:h-5 sm:w-5 mr-2"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

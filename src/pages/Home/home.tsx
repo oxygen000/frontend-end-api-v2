@@ -109,13 +109,13 @@ function Home() {
         </motion.div>
 
         <motion.div
-          className="hidden sm:block absolute bg-white h-1 top-[15%] left-[21%] w-[28%]"
+          className="hidden sm:block absolute bg-white h-1 top-[10%] left-[21%] w-[28%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
         ></motion.div>
         <motion.div
-          className="hidden sm:block absolute bg-white h-1 top-[15%] left-[52%] w-[28%]"
+          className="hidden sm:block absolute bg-white h-1 top-[10%] left-[52%] w-[28%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}

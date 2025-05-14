@@ -31,13 +31,13 @@ const SectionButtons = ({
   const { t } = useTranslationWithFallback();
 
   return (
-    <div className="flex justify-between mt-6">
+    <div className="flex justify-between mt-4 sm:mt-6">
       {onPrev && (
         <button
           type="button"
           onClick={onPrev}
           disabled={isSubmitting}
-          className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
+          className="px-4 sm:px-6 py-1.5 sm:py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
         >
           {t('common.back')}
         </button>
@@ -47,7 +47,7 @@ const SectionButtons = ({
           type="button"
           onClick={onNext}
           disabled={isSubmitting}
-          className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors ml-auto disabled:opacity-50"
+          className="px-4 sm:px-6 py-1.5 sm:py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors ml-auto disabled:opacity-50 text-sm sm:text-base"
         >
           {t('common.next')}
         </button>
@@ -605,7 +605,7 @@ function AddNormalChild() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* "Back" Button */}
       <div>
         <Link
@@ -630,19 +630,19 @@ function AddNormalChild() {
 
       {/* Form Progress Indicator - Only show when not in success state */}
       {!submitSuccess && (
-        <div className="flex justify-center mt-6">
-          <div className="flex items-center space-x-4">
+        <div className="flex justify-center mt-4 sm:mt-6">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {[1, 2, 3, 4].map((step, idx) => (
               <React.Fragment key={step}>
                 {idx > 0 && (
-                  <div className="w-16 h-1 bg-gray-300">
+                  <div className="w-8 sm:w-16 h-1 bg-gray-300">
                     <div
                       className={`h-full ${currentSection >= step ? 'bg-orange-600' : 'bg-gray-300'}`}
                     ></div>
                   </div>
                 )}
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                     currentSection === step
                       ? 'bg-orange-600 text-white scale-110'
                       : currentSection > step
@@ -668,12 +668,12 @@ function AddNormalChild() {
       ) : (
         <motion.form
           onSubmit={handleFormSubmit}
-          className="max-w-2xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(255,165,0,0.3)] text-white border border-white/30 space-y-8"
+          className="w-full max-w-2xl mx-auto bg-white/20 backdrop-blur-lg p-4 sm:p-6 md:p-10 mt-4 sm:mt-6 rounded-xl sm:rounded-2xl shadow-[0_0_30px_5px_rgba(255,165,0,0.3)] text-white border border-white/30 space-y-4 sm:space-y-8"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold text-center mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">
             {t('forms.child.title')}
           </h2>
 
@@ -689,7 +689,7 @@ function AddNormalChild() {
             >
               <ul className="list-disc pl-5">
                 {formErrors.map((error, index) => (
-                  <li key={index} className="text-red-200">
+                  <li key={index} className="text-red-200 text-sm sm:text-base">
                     {error}
                   </li>
                 ))}
@@ -705,9 +705,9 @@ function AddNormalChild() {
               animate="visible"
               exit="exit"
               transition={transition}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {t('registration.personalInfo')}
               </h3>
               <Input
@@ -725,14 +725,14 @@ function AddNormalChild() {
                 onChange={handleInputChange}
               />
               <div>
-                <label className="block font-medium mb-1">
+                <label className="block font-medium mb-1 text-sm sm:text-base">
                   {t('registration.gender')}
                 </label>
                 <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white/10 border text-black border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 sm:px-4 py-2 bg-white/10 border text-black border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 >
                   <option value="">
                     {t('registration.selectGender', 'Select Gender')}
@@ -765,9 +765,11 @@ function AddNormalChild() {
               animate="visible"
               exit="exit"
               transition={transition}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <h3 className="text-lg font-semibold">Guardian Information</h3>
+              <h3 className="text-base sm:text-lg font-semibold">
+                Guardian Information
+              </h3>
               <Input
                 label="Guardian's Name"
                 name="guardian_name"
@@ -781,14 +783,14 @@ function AddNormalChild() {
                 onChange={handleInputChange}
               />
               <div>
-                <label className="block font-medium mb-1">
+                <label className="block font-medium mb-1 text-sm sm:text-base">
                   Telecom Company
                 </label>
                 <select
                   name="phone_company"
                   value={formData.phone_company}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white/10 text-black border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 sm:px-4 py-2 bg-white/10 text-black border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 >
                   <option value="">Select Company</option>
                   <option value="Orange">Orange</option>
@@ -798,14 +800,14 @@ function AddNormalChild() {
                 </select>
               </div>
               <div>
-                <label className="block font-medium mb-1">
+                <label className="block font-medium mb-1 text-sm sm:text-base">
                   Relationship to Child
                 </label>
                 <select
                   name="relationship"
                   value={formData.relationship}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 text-black bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 sm:px-4 py-2 text-black bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 >
                   <option value="">Select Relationship</option>
                   <option value="parent">Parent</option>
@@ -828,9 +830,11 @@ function AddNormalChild() {
               animate="visible"
               exit="exit"
               transition={transition}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <h3 className="text-lg font-semibold">Disappearance Details</h3>
+              <h3 className="text-base sm:text-lg font-semibold">
+                Disappearance Details
+              </h3>
               <Input
                 label="Last Seen (Date & Time)"
                 name="last_seen_time"
@@ -874,20 +878,22 @@ function AddNormalChild() {
               animate="visible"
               exit="exit"
               transition={transition}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
-              <h3 className="text-lg font-semibold">Child's Photo</h3>
-              <p className="text-white/80">
+              <h3 className="text-base sm:text-lg font-semibold">
+                Child's Photo
+              </h3>
+              <p className="text-white/80 text-sm sm:text-base">
                 Please upload a clear photo of the child's face to help with
                 identification.
               </p>
               <div className="flex flex-col items-center">
                 {/* Toggle between upload and camera capture */}
-                <div className="flex items-center space-x-4 mb-4">
+                <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
                   <button
                     type="button"
                     onClick={handleToggleCamera}
-                    className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base bg-orange-600 text-white rounded hover:bg-orange-700"
                   >
                     {formData.useCamera
                       ? 'Switch to Upload'
@@ -895,16 +901,16 @@ function AddNormalChild() {
                   </button>
                   <div>
                     {formData.useCamera ? (
-                      <FaCamera className="text-white text-2xl" />
+                      <FaCamera className="text-white text-xl sm:text-2xl" />
                     ) : (
-                      <FaUpload className="text-white text-2xl" />
+                      <FaUpload className="text-white text-xl sm:text-2xl" />
                     )}
                   </div>
                 </div>
 
                 {!formData.useCamera ? (
                   <div className="flex flex-col items-center">
-                    <label className="block text-white font-semibold mb-2">
+                    <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
                       Upload Child's Photo
                     </label>
                     <div
@@ -924,21 +930,21 @@ function AddNormalChild() {
                     </div>
 
                     {formData.image && (
-                      <div className="mt-4 flex justify-center">
+                      <div className="mt-3 sm:mt-4 flex justify-center">
                         <img
                           src={URL.createObjectURL(formData.image)}
                           alt="Preview"
-                          className="max-w-full max-h-64 rounded shadow-md"
+                          className="max-w-full max-h-48 sm:max-h-64 rounded shadow-md"
                         />
                       </div>
                     )}
                   </div>
                 ) : (
                   // Camera capture section
-                  <div className="flex flex-col items-center text-white">
+                  <div className="flex flex-col items-center text-white w-full">
                     {!capturedImage ? (
                       <>
-                        <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-orange-400">
+                        <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md rounded-lg overflow-hidden border-2 border-orange-400">
                           <Webcam
                             audio={false}
                             ref={webcamRef}
@@ -953,7 +959,7 @@ function AddNormalChild() {
                           <div className="absolute inset-0 pointer-events-none">
                             {/* Face alignment guide */}
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-64 h-64 border-2 border-orange-400 rounded-full opacity-50"></div>
+                              <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 border-2 border-orange-400 rounded-full opacity-50"></div>
                             </div>
                             <svg
                               width="100%"
@@ -972,7 +978,7 @@ function AddNormalChild() {
                         </div>
                         <button
                           type="button"
-                          className="mt-4 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center mx-auto"
+                          className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center mx-auto text-sm sm:text-base"
                           onClick={captureImage}
                         >
                           <FaCamera className="mr-2" /> Capture Photo
@@ -980,7 +986,7 @@ function AddNormalChild() {
                       </>
                     ) : (
                       <>
-                        <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-green-400">
+                        <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md rounded-lg overflow-hidden border-2 border-green-400">
                           <img
                             src={capturedImage}
                             alt="Captured"
@@ -998,7 +1004,7 @@ function AddNormalChild() {
                         </div>
                         <button
                           type="button"
-                          className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
+                          className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center text-sm sm:text-base"
                           onClick={retakePhoto}
                         >
                           <FaRedo className="mr-2" /> Retake Photo
@@ -1011,20 +1017,20 @@ function AddNormalChild() {
               <SectionButtons onPrev={prevSection} />
 
               {/* Submit Button */}
-              <div className="mt-8 flex flex-col items-center">
+              <div className="mt-6 sm:mt-8 flex flex-col items-center">
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className={`
-                    px-8 py-3 rounded-lg font-semibold
+                    px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold
                     flex items-center justify-center
-                    transition-all duration-300
+                    transition-all duration-300 text-sm sm:text-base
                     ${
                       isSubmitting
                         ? 'bg-orange-400 cursor-not-allowed'
                         : 'bg-orange-600 hover:bg-orange-700 shadow-lg hover:shadow-orange-500/30'
                     }
-                    text-white min-w-[200px]
+                    text-white w-full sm:w-auto sm:min-w-[200px]
                     relative overflow-hidden
                   `}
                 >
@@ -1040,7 +1046,7 @@ function AddNormalChild() {
                   {isSubmitting ? (
                     <div className="flex items-center">
                       <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        className="animate-spin -ml-1 mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -1065,7 +1071,7 @@ function AddNormalChild() {
                     <>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 mr-2"
+                        className="h-4 w-4 sm:h-5 sm:w-5 mr-2"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

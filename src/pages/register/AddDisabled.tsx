@@ -521,9 +521,9 @@ function AddDisabled() {
       : 'bg-gray-200 text-gray-500';
 
   return (
-    <>
+    <div className="px-4 sm:px-6 w-full max-w-full overflow-x-hidden">
       {/* "Back" Button */}
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <Link
           to="/home"
           className="inline-flex items-center text-white hover:text-purple-300 transition-colors"
@@ -546,40 +546,40 @@ function AddDisabled() {
 
       {/* Form Progress Indicator - Only show when not in success state */}
       {!submitSuccess && (
-        <div className="flex justify-center mt-6">
-          <div className="flex items-center space-x-4">
+        <div className="flex justify-center mt-4 sm:mt-6 overflow-x-auto">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(1)}`}
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${indicatorClasses(1)}`}
             >
               1
             </div>
-            <div className="w-16 h-1 bg-gray-300">
+            <div className="w-8 sm:w-16 h-1 bg-gray-300">
               <div
                 className={`h-full ${currentSection >= 2 ? 'bg-purple-600' : 'bg-gray-300'}`}
               ></div>
             </div>
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(2)}`}
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${indicatorClasses(2)}`}
             >
               2
             </div>
-            <div className="w-16 h-1 bg-gray-300">
+            <div className="w-8 sm:w-16 h-1 bg-gray-300">
               <div
                 className={`h-full ${currentSection >= 3 ? 'bg-purple-600' : 'bg-gray-300'}`}
               ></div>
             </div>
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(3)}`}
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${indicatorClasses(3)}`}
             >
               3
             </div>
-            <div className="w-16 h-1 bg-gray-300">
+            <div className="w-8 sm:w-16 h-1 bg-gray-300">
               <div
                 className={`h-full ${currentSection >= 4 ? 'bg-purple-600' : 'bg-gray-300'}`}
               ></div>
             </div>
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(4)}`}
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${indicatorClasses(4)}`}
             >
               4
             </div>
@@ -600,12 +600,12 @@ function AddDisabled() {
       ) : (
         <motion.form
           onSubmit={handleFormSubmit}
-          className="max-w-xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(128,0,128,0.5)] border border-white/30 text-white space-y-8"
+          className="max-w-xl mx-auto bg-white/20 backdrop-blur-lg p-5 sm:p-10 mt-4 sm:mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(128,0,128,0.5)] border border-white/30 text-white space-y-6 sm:space-y-8"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold text-center mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">
             {t('forms.disabled.title', 'Accompanying Person Registration')}
           </h2>
 
@@ -639,7 +639,7 @@ function AddDisabled() {
               transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {t('registration.personalInfo', 'Basic Information')}
               </h3>
               <Input
@@ -694,7 +694,7 @@ function AddDisabled() {
               transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {t('registration.contactInfo', 'Contact Information')}
               </h3>
               <Input
@@ -742,7 +742,7 @@ function AddDisabled() {
               transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {t('forms.disabled.disabilityInfo', 'Disability Information')}
               </h3>
               <div>
@@ -811,10 +811,10 @@ function AddDisabled() {
               transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {t('registration.photo', "Person's Photo")}
               </h3>
-              <p className="text-white/80">
+              <p className="text-white/80 text-sm sm:text-base">
                 {t(
                   'registration.photoInstructions',
                   "Please upload a clear photo of the person's face. This will be used for identification purposes."
@@ -822,11 +822,11 @@ function AddDisabled() {
               </p>
 
               {/* Toggle between upload and camera capture */}
-              <div className="flex items-center space-x-4 mb-4">
+              <div className="flex flex-wrap items-center gap-4 mb-4">
                 <button
                   type="button"
                   onClick={handleToggleCamera}
-                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                  className="px-3 py-2 sm:px-4 sm:py-2 bg-purple-600 text-white text-sm sm:text-base rounded hover:bg-purple-700"
                 >
                   {personDetails.useCamera
                     ? t('registration.switchToUpload', 'Switch to Upload')
@@ -834,9 +834,9 @@ function AddDisabled() {
                 </button>
                 <div>
                   {personDetails.useCamera ? (
-                    <FaCamera className="text-white text-2xl" />
+                    <FaCamera className="text-white text-xl sm:text-2xl" />
                   ) : (
-                    <FaUpload className="text-white text-2xl" />
+                    <FaUpload className="text-white text-xl sm:text-2xl" />
                   )}
                 </div>
               </div>
@@ -867,10 +867,10 @@ function AddDisabled() {
                 </div>
               ) : (
                 // Camera capture section
-                <div className="flex flex-col items-center text-white">
+                <div className="flex flex-col items-center text-white w-full">
                   {!capturedImage ? (
                     <>
-                      <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-pink-400">
+                      <div className="relative w-full max-w-xs sm:max-w-md rounded-lg overflow-hidden border-2 border-pink-400">
                         <Webcam
                           audio={false}
                           ref={webcamRef}
@@ -885,7 +885,7 @@ function AddDisabled() {
                         <div className="absolute inset-0 pointer-events-none">
                           {/* Face alignment guide */}
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-64 h-64 border-2 border-pink-400 rounded-full opacity-50"></div>
+                            <div className="w-48 h-48 sm:w-64 sm:h-64 border-2 border-pink-400 rounded-full opacity-50"></div>
                           </div>
                           <svg
                             width="100%"
@@ -905,7 +905,7 @@ function AddDisabled() {
 
                       <button
                         type="button"
-                        className="mt-4 px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center mx-auto"
+                        className="mt-4 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center mx-auto text-sm sm:text-base"
                         onClick={captureImage}
                       >
                         <FaCamera className="mr-2" />{' '}
@@ -914,7 +914,7 @@ function AddDisabled() {
                     </>
                   ) : (
                     <>
-                      <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-green-400">
+                      <div className="relative w-full max-w-xs sm:max-w-md rounded-lg overflow-hidden border-2 border-green-400">
                         <img
                           src={capturedImage}
                           alt="Captured"
@@ -932,7 +932,7 @@ function AddDisabled() {
                       </div>
                       <button
                         type="button"
-                        className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
+                        className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center text-sm sm:text-base"
                         onClick={retakePhoto}
                       >
                         <FaRedo className="mr-2" />{' '}
@@ -949,7 +949,7 @@ function AddDisabled() {
                   <img
                     src={URL.createObjectURL(personDetails.image)}
                     alt="Preview"
-                    className="max-w-full max-h-64 rounded shadow-md"
+                    className="max-w-full max-h-48 sm:max-h-64 rounded shadow-md"
                   />
                 </div>
               )}
@@ -957,12 +957,12 @@ function AddDisabled() {
               <SectionButtons onPrev={prevSection} />
 
               {/* Submit Button */}
-              <div className="mt-8 flex flex-col items-center">
+              <div className="mt-6 sm:mt-8 flex flex-col items-center">
                 <button
                   type="submit"
                   disabled={loading}
                   className={`
-                      px-8 py-3 rounded-lg font-semibold
+                      w-full sm:w-auto px-6 py-3 rounded-lg font-semibold
                       flex items-center justify-center
                       transition-all duration-300
                       ${
@@ -970,8 +970,8 @@ function AddDisabled() {
                           ? 'bg-pink-400 cursor-not-allowed'
                           : 'bg-pink-600 hover:bg-pink-700 shadow-lg hover:shadow-pink-500/30'
                       }
-                      text-white min-w-[200px]
-                      relative overflow-hidden
+                      text-white min-w-[180px] sm:min-w-[200px]
+                      relative overflow-hidden text-sm sm:text-base
                     `}
                 >
                   {loading && (
@@ -1035,7 +1035,7 @@ function AddDisabled() {
           )}
         </motion.form>
       )}
-    </>
+    </div>
   );
 }
 
