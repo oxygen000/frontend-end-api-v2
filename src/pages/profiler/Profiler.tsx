@@ -1,771 +1,390 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
+import { users } from '../../types/users';
+import type { User } from '../../types/users';
+import { motion } from 'framer-motion';
+import {
+  FiUser,
+  FiInfo,
+  FiCalendar,
+  FiLock,
+  FiMail,
+  FiLogOut,
+  FiPhone,
+  FiHome,
+  FiClock,
+  FiShield,
+} from 'react-icons/fi';
+import { FaIdCard } from 'react-icons/fa';
 
-// Import types from API service and create a combined type
-import type {
-  MaleUser,
-  FemaleUser,
-  ChildUser,
-  DisabledUser,
-} from '../../services/api';
-
-// Combine all user types for API handling
-type ApiUser = MaleUser | FemaleUser | ChildUser | DisabledUser;
-
-// Extended user type with additional profile fields
-interface ProfileUser {
-  id: string | number;
-  username?: string;
-  name?: string;
-  photo?: string;
-  image_path?: string;
-  email?: string;
-  bio?: string;
-  registrationDate?: string;
-  created_at?: string;
-  // Reference to API user type if needed
-  apiData?: ApiUser;
-}
-
-// Registration data interface
-interface RegistrationData {
-  name: string;
-  nickname?: string;
-  dob?: string;
-  date_of_birth?: string;
-  gender?: string;
-  national_id?: string;
-  address?: string;
-  category?: string;
-  form_type?: string;
-  physical_description?: string;
-  last_clothes?: string;
-  area_of_disappearance?: string;
-  last_seen_time?: string;
-  guardian_name?: string;
-  guardian_phone?: string;
-  guardian_id?: string;
-  relationship?: string;
-  additional_notes?: string;
-  phone_number?: string;
-  phone_company?: string;
-  employee_id?: string;
-  department?: string;
-  role?: string;
-  // Additional fields for other user types
-  job?: string;
-  document_number?: string;
-  occupation?: string;
-  disability_type?: string;
-  disability_details?: string;
-  medical_condition?: string;
-  medication?: string;
-  caregiver_name?: string;
-  caregiver_phone?: string;
-  caregiver_relationship?: string;
-}
-
-// Enhanced mock users with profile data
-const profileUsers: ProfileUser[] = [
-  {
-    id: 1,
-    username: 'user1',
-    name: 'John Smith',
-    photo: 'https://randomuser.me/api/portraits/men/1.jpg',
-    email: 'john.smith@example.com',
-    bio: 'Software developer with 5 years of experience',
-    registrationDate: '2023-05-15',
+// Define section color styles
+const SECTION_COLORS = {
+  profile: {
+    gradient: 'from-blue-500/20 to-blue-500/10',
+    border: 'border-blue-500/30',
+    icon: 'text-blue-400',
   },
-  {
-    id: 2,
-    username: 'user2',
-    name: 'Sarah Johnson',
-    photo: 'https://randomuser.me/api/portraits/women/1.jpg',
-    email: 'sarah.johnson@example.com',
-    bio: 'UI/UX Designer passionate about creating intuitive interfaces',
-    registrationDate: '2023-06-22',
+  account: {
+    gradient: 'from-teal-500/20 to-teal-500/10',
+    border: 'border-teal-500/30',
+    icon: 'text-teal-400',
   },
-  {
-    id: 3,
-    username: 'user3',
-    name: 'Alex Thompson',
-    photo: 'https://randomuser.me/api/portraits/men/2.jpg',
-    email: 'alex.thompson@example.com',
-    bio: 'Product manager with expertise in launching digital products',
-    registrationDate: '2023-08-10',
-  },
-  // Mock registration data for testing
-  {
-    id: 'temp-1747175442876', // Example temp ID from logs
-    name: 'sdlcmklsk',
-    username: 'sdlcmklsk',
-    registrationDate: '2025-05-13',
-    // Registration data
-    bio: 'Registered through child form',
-  },
-];
-
-// Mock registration data - simulating what would be stored after form submission
-const registrationData: Record<string, RegistrationData> = {
-  'temp-1747175442876': {
-    name: 'sdlcmklsk',
-    nickname: 'sdlcmklsk',
-    dob: '2025-05-28',
-    date_of_birth: '2025-05-28',
-    national_id: '',
-    address: '',
-    category: 'child',
-    form_type: 'child',
-    physical_description: 'asdasd',
-    last_clothes: 'asdasd',
-    area_of_disappearance: 'asdas',
-    last_seen_time: '2025-05-01T02:32',
-    guardian_name: 'asdas',
-    guardian_phone: '1123213123',
-    guardian_id: '',
-    relationship: 'aunt/uncle',
-    gender: 'male',
-    additional_notes: 'sdasdasd',
-    phone_number: '1123213123',
-    phone_company: 'Etisalat',
+  activity: {
+    gradient: 'from-purple-500/20 to-purple-500/10',
+    border: 'border-purple-500/30',
+    icon: 'text-purple-400',
   },
 };
 
 function Profiler() {
-  const { t } = useTranslationWithFallback();
-  const { id } = useParams<{ id: string }>();
+  const { t, isRTL } = useTranslationWithFallback();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<
-    'personal' | 'contact' | 'additional'
-  >('personal');
+  const params = useParams();
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [userData, setUserData] = useState<ProfileUser | null>(null);
-  const [registrationDetails, setRegistrationDetails] =
-    useState<RegistrationData | null>(null);
-  const [isTemporaryId, setIsTemporaryId] = useState<boolean>(false);
 
-  // Fetch user data when component mounts
   useEffect(() => {
-    // Load user data immediately without delay
-    if (!id) {
-      setError(t('profile.errors.noUser', 'No user specified'));
-      setLoading(false);
-      return;
-    }
+    // Check if user is logged in
+    const fetchUserProfile = () => {
+      setLoading(true);
 
-    // Check if this is a temporary ID from registration
-    const isTempId = id.startsWith('temp-');
-    setIsTemporaryId(isTempId);
+      try {
+        // First, check if we have a user ID in the route params
+        let userId = params.id ? parseInt(params.id) : null;
 
-    let user: ProfileUser | undefined;
+        // If not, get it from localStorage (the logged-in user)
+        if (!userId) {
+          const storedUserId = localStorage.getItem('loggedInUserId');
 
-    if (isTempId) {
-      // For temporary IDs, get from registrationData
-      const regData = registrationData[id];
-      if (regData) {
-        user = {
-          id: id,
-          name: regData.name,
-          username: regData.nickname || regData.name,
-          // Use a placeholder image for temp users
-          photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(regData.name)}&background=random`,
-          registrationDate: new Date().toISOString(),
-        };
-        setRegistrationDetails(regData);
+          if (storedUserId) {
+            userId = parseInt(storedUserId);
+          } else {
+            // User is not logged in, redirect to login page
+            navigate('/login');
+            return;
+          }
+        }
+
+        // Find the user in the users array
+        const currentUser = users.find((u) => u.id === userId);
+
+        if (currentUser) {
+          setUser(currentUser);
+        } else {
+          setError(t('users.notFound', 'User not found'));
+
+          // If this is the logged-in user and they don't exist, clear localStorage and redirect to login
+          if (!params.id) {
+            localStorage.removeItem('loggedInUserId');
+            localStorage.removeItem('loggedInUsername');
+            navigate('/login');
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError(t('errors.generic', 'Failed to load user profile'));
+      } finally {
+        setLoading(false);
       }
-    } else {
-      // Try to find by numeric ID first
-      const numericId = parseInt(id);
-      if (!isNaN(numericId)) {
-        user = profileUsers.find((u) => u.id === numericId);
-      }
+    };
 
-      // If not found by numeric ID, try string ID
-      if (!user) {
-        user = profileUsers.find((u) => u.id.toString() === id);
-      }
+    fetchUserProfile();
+  }, [navigate, params.id, t]);
 
-      // If found by string ID, check if we have registration data
-      if (user && registrationData[id]) {
-        setRegistrationDetails(registrationData[id]);
-      }
-    }
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('loggedInUserId');
+    localStorage.removeItem('loggedInUsername');
 
-    if (user) {
-      setUserData(user);
-      setLoading(false);
-    } else {
-      setError(t('profile.errors.userNotFound', 'User not found'));
-      setLoading(false);
-    }
-  }, [id, t]);
+    // Redirect to login page
+    navigate('/login');
+  };
 
-  // Helper function to format date
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '';
-
+  // Format date function
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return t('users.notAvailable', 'N/A');
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
+    return date.toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(date);
+    });
   };
 
-  // Get user category for display
-  const getUserCategory = () => {
-    if (!registrationDetails) return '';
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <span className="ml-4 text-white">
+          {t('common.loading', 'Loading...')}
+        </span>
+      </div>
+    );
+  }
 
-    const category = registrationDetails.category?.toLowerCase();
-    if (category === 'male') return 'Male';
-    if (category === 'female') return 'Female';
-    if (category === 'child') return 'Child';
-    if (category === 'disabled') return 'Person with Disability';
-
-    return registrationDetails.form_type || '';
-  };
+  if (error || !user) {
+    return (
+      <div className="p-6 text-center">
+        <div className="bg-red-100/20 backdrop-blur-md border border-red-400/30 text-red-700 px-4 py-3 rounded">
+          <p>{error || t('users.notFound', 'User not found')}</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="mt-2 bg-blue-600/70 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded"
+          >
+            {t('common.back', 'Back to Login')}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <Link
-        to="/home"
-        className="inline-flex items-center text-white hover:text-blue-300 transition-colors"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-            clipRule="evenodd"
-          />
-        </svg>
-        {t('common.back', 'Back to Home')}
-      </Link>
+    <div className="p-3 sm:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+        <h1 className="text-2xl font-bold text-white">
+          {t('users.myProfile', 'My Profile')}
+        </h1>
 
-      <motion.div
-        className="max-w-4xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(0,0,255,0.3)] text-white border border-white/30"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-xl">{t('common.loading', 'Loading...')}</p>
-          </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <div className="text-red-400 text-5xl mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-24 w-24 mx-auto"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold mb-2">
-              {t('profile.errors.title', 'Error')}
-            </h2>
-            <p className="text-white/80 mb-8">{error}</p>
-            <button
-              onClick={() => navigate('/home')}
-              className="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {t('common.returnHome', 'Return Home')}
-            </button>
-          </div>
-        ) : userData ? (
-          <>
-            {/* Profile Header */}
-            <div className="flex flex-col items-center mb-10">
-              {isTemporaryId && (
-                <div className="mb-4 px-4 py-2 bg-yellow-500/20 text-yellow-200 rounded-lg">
-                  {t(
-                    'profile.tempId',
-                    'Viewing recently registered data (not yet saved to database)'
-                  )}
-                </div>
-              )}
-
-              {/* Profile Photo */}
-              <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white/30 mb-6 relative group">
-                {userData.photo ? (
-                  <img
-                    src={userData.photo}
-                    alt={userData.name || userData.username || ''}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // If image fails to load, show placeholder
-                      e.currentTarget.src =
-                        'https://ui-avatars.com/api/?name=' +
-                        encodeURIComponent(
-                          userData.name || userData.username || 'User'
-                        );
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-4xl font-bold">
-                    {userData.name
-                      ? userData.name.charAt(0).toUpperCase()
-                      : userData.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                  <span className="text-white text-sm">Profile Photo</span>
-                </div>
-              </div>
-
-              {/* User Name and Username */}
-              <motion.h1
-                className="text-4xl font-bold mb-2 text-center"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                {userData.name || userData.username || 'Unknown User'}
-              </motion.h1>
-
-              {userData.username && userData.username !== userData.name && (
-                <motion.p
-                  className="text-xl text-white/70 mb-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  @{userData.username}
-                </motion.p>
-              )}
-
-              {/* User Category */}
-              {registrationDetails && (
-                <motion.div
-                  className="px-3 py-1 bg-blue-600/30 text-blue-200 rounded-full text-sm mb-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  {getUserCategory()}
-                </motion.div>
-              )}
-
-              {/* User Bio */}
-              {userData.bio && (
-                <motion.p
-                  className="text-center text-white/80 max-w-xl mb-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  {userData.bio}
-                </motion.p>
-              )}
-
-              {/* Member Since */}
-              {(userData.registrationDate || userData.created_at) && (
-                <motion.div
-                  className="text-center text-white/60 text-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  Member since{' '}
-                  {formatDate(userData.registrationDate || userData.created_at)}
-                </motion.div>
-              )}
-            </div>
-
-            {/* Tabs Navigation */}
-            <div className="flex justify-center mb-10">
-              <div className="flex p-1 bg-white/10 rounded-lg">
-                {(['personal', 'contact', 'additional'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-2.5 rounded-md transition-all ${
-                      activeTab === tab
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-white/70 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    {t(
-                      `profile.tabs.${tab}`,
-                      tab.charAt(0).toUpperCase() + tab.slice(1)
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Personal Information Tab */}
-            {activeTab === 'personal' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="space-y-6"
-              >
-                <h2 className="text-2xl font-bold mb-6 text-center">
-                  {t('profile.personalInfoTitle', 'Personal Information')}
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Name */}
-                  <div className="mb-4">
-                    <h3 className="text-sm font-medium text-white/60">
-                      {t('profile.fields.name', 'Full Name')}
-                    </h3>
-                    <p className="text-lg">
-                      {userData.name ||
-                        registrationDetails?.name ||
-                        t('profile.notProvided', 'Not provided')}
-                    </p>
-                  </div>
-
-                  {/* Nickname/Username */}
-                  <div className="mb-4">
-                    <h3 className="text-sm font-medium text-white/60">
-                      {t('profile.fields.nickname', 'Nickname')}
-                    </h3>
-                    <p className="text-lg">
-                      {userData.username ||
-                        registrationDetails?.nickname ||
-                        t('profile.notProvided', 'Not provided')}
-                    </p>
-                  </div>
-
-                  {/* Gender */}
-                  {registrationDetails?.gender && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.gender', 'Gender')}
-                      </h3>
-                      <p className="text-lg capitalize">
-                        {registrationDetails.gender}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Date of Birth */}
-                  {(registrationDetails?.dob ||
-                    registrationDetails?.date_of_birth) && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.dob', 'Date of Birth')}
-                      </h3>
-                      <p className="text-lg">
-                        {formatDate(
-                          registrationDetails.dob ||
-                            registrationDetails.date_of_birth
-                        )}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Form Type */}
-                  {registrationDetails?.form_type && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.formType', 'Registration Type')}
-                      </h3>
-                      <p className="text-lg capitalize">
-                        {registrationDetails.form_type}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* National ID */}
-                  {registrationDetails?.national_id && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.nationalId', 'National ID')}
-                      </h3>
-                      <p className="text-lg">
-                        {registrationDetails.national_id}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Job/Occupation (for adults) */}
-                  {registrationDetails?.job && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.job', 'Occupation')}
-                      </h3>
-                      <p className="text-lg">{registrationDetails.job}</p>
-                    </div>
-                  )}
-
-                  {/* Email (from standard profiles) */}
-                  {userData.email && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.email', 'Email')}
-                      </h3>
-                      <p className="text-lg">{userData.email}</p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Contact Information Tab */}
-            {activeTab === 'contact' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="space-y-6"
-              >
-                <h2 className="text-2xl font-bold mb-6 text-center">
-                  {t('profile.contactInfoTitle', 'Contact Information')}
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Address */}
-                  <div className="mb-4">
-                    <h3 className="text-sm font-medium text-white/60">
-                      {t('profile.fields.address', 'Address')}
-                    </h3>
-                    <p className="text-lg">
-                      {registrationDetails?.address ||
-                        t('profile.notProvided', 'Not provided')}
-                    </p>
-                  </div>
-
-                  {/* Phone Number */}
-                  {registrationDetails?.phone_number && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.phoneNumber', 'Phone Number')}
-                      </h3>
-                      <p className="text-lg">
-                        {registrationDetails.phone_number}
-                        {registrationDetails.phone_company &&
-                          ` (${registrationDetails.phone_company})`}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Guardian Name (for children) */}
-                  {registrationDetails?.guardian_name && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.guardianName', 'Guardian Name')}
-                      </h3>
-                      <p className="text-lg">
-                        {registrationDetails.guardian_name}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Guardian Phone (for children) */}
-                  {registrationDetails?.guardian_phone && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.guardianPhone', 'Guardian Phone')}
-                      </h3>
-                      <p className="text-lg">
-                        {registrationDetails.guardian_phone}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Relationship (for children) */}
-                  {registrationDetails?.relationship && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t(
-                          'profile.fields.relationship',
-                          'Relationship to Guardian'
-                        )}
-                      </h3>
-                      <p className="text-lg capitalize">
-                        {registrationDetails.relationship.replace('/', ' or ')}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Caregiver info (for disabled) */}
-                  {registrationDetails?.caregiver_name && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60">
-                        {t('profile.fields.caregiverName', 'Caregiver Name')}
-                      </h3>
-                      <p className="text-lg">
-                        {registrationDetails.caregiver_name}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* If no contact info is available */}
-                {!registrationDetails?.address &&
-                  !registrationDetails?.phone_number &&
-                  !registrationDetails?.guardian_name &&
-                  !registrationDetails?.caregiver_name && (
-                    <div className="text-center py-8">
-                      <div className="text-6xl mb-4">📱</div>
-                      <p className="text-white/70">
-                        {t(
-                          'profile.noContactInfo',
-                          'No contact information available'
-                        )}
-                      </p>
-                    </div>
-                  )}
-              </motion.div>
-            )}
-
-            {/* Additional Information Tab */}
-            {activeTab === 'additional' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="space-y-6"
-              >
-                <h2 className="text-2xl font-bold mb-6 text-center">
-                  {t('profile.additionalInfoTitle', 'Additional Information')}
-                </h2>
-
-                <div className="space-y-6">
-                  {/* Physical Description */}
-                  {registrationDetails?.physical_description && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60 mb-1">
-                        {t(
-                          'profile.fields.physicalDescription',
-                          'Physical Description'
-                        )}
-                      </h3>
-                      <p className="text-lg bg-white/10 p-3 rounded-lg">
-                        {registrationDetails.physical_description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Last Clothes (for missing people) */}
-                  {registrationDetails?.last_clothes && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60 mb-1">
-                        {t(
-                          'profile.fields.lastClothes',
-                          'Clothes When Last Seen'
-                        )}
-                      </h3>
-                      <p className="text-lg bg-white/10 p-3 rounded-lg">
-                        {registrationDetails.last_clothes}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Last Seen Info */}
-                  {(registrationDetails?.last_seen_time ||
-                    registrationDetails?.area_of_disappearance) && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60 mb-1">
-                        {t('profile.fields.lastSeen', 'Last Seen Information')}
-                      </h3>
-                      <div className="bg-white/10 p-3 rounded-lg">
-                        {registrationDetails.last_seen_time && (
-                          <p className="mb-2">
-                            <span className="font-medium">Time:</span>{' '}
-                            {registrationDetails.last_seen_time}
-                          </p>
-                        )}
-                        {registrationDetails.area_of_disappearance && (
-                          <p>
-                            <span className="font-medium">Location:</span>{' '}
-                            {registrationDetails.area_of_disappearance}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Disability Info */}
-                  {(registrationDetails?.disability_type ||
-                    registrationDetails?.disability_details) && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60 mb-1">
-                        {t(
-                          'profile.fields.disabilityInfo',
-                          'Disability Information'
-                        )}
-                      </h3>
-                      <div className="bg-white/10 p-3 rounded-lg">
-                        {registrationDetails.disability_type && (
-                          <p className="mb-2">
-                            <span className="font-medium">Type:</span>{' '}
-                            {registrationDetails.disability_type}
-                          </p>
-                        )}
-                        {registrationDetails.disability_details && (
-                          <p>
-                            <span className="font-medium">Details:</span>{' '}
-                            {registrationDetails.disability_details}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Additional Notes */}
-                  {registrationDetails?.additional_notes && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-white/60 mb-1">
-                        {t(
-                          'profile.fields.additionalNotes',
-                          'Additional Notes'
-                        )}
-                      </h3>
-                      <p className="text-lg bg-white/10 p-3 rounded-lg">
-                        {registrationDetails.additional_notes}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* If no additional info is available */}
-                  {!registrationDetails?.physical_description &&
-                    !registrationDetails?.last_clothes &&
-                    !registrationDetails?.last_seen_time &&
-                    !registrationDetails?.disability_type &&
-                    !registrationDetails?.additional_notes && (
-                      <div className="text-center py-8">
-                        <div className="text-6xl mb-4">📝</div>
-                        <p className="text-white/70">
-                          {t(
-                            'profile.noAdditionalInfo',
-                            'No additional information available'
-                          )}
-                        </p>
-                      </div>
-                    )}
-                </div>
-              </motion.div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-12">
-            <p>{t('profile.noData', 'No user data available')}</p>
-          </div>
+        {/* Only show logout button for the logged-in user */}
+        {!params.id && (
+          <button
+            onClick={handleLogout}
+            className="mt-2 sm:mt-0 px-4 py-2 bg-red-600/50 hover:bg-red-700/60 text-white rounded-lg flex items-center transition-colors"
+          >
+            <FiLogOut className={`${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t('auth.logout', 'Logout')}
+          </button>
         )}
+      </div>
+
+      {/* User profile header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-white/20 to-white/10 backdrop-blur-md rounded-xl p-4 sm:p-6 border border-white/30 shadow-lg mb-4 sm:mb-6"
+      >
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-4 sm:gap-6">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-lg border-2 border-white/30">
+            {user.profileImageUrl ? (
+              <img
+                src={user.profileImageUrl}
+                alt={user.fullName || user.username}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                {(user.fullName || user.username).charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <div className="text-center md:text-left flex-1">
+            <div className="flex items-center justify-center md:justify-start flex-wrap">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                {user.fullName || user.username}
+              </h2>
+            </div>
+            <p className="text-white/70 mt-1">@{user.username}</p>
+            <p className="text-white/70 mt-1 flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <span className="bg-blue-500/30 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
+                {params.id
+                  ? t('users.userProfile', 'User Profile')
+                  : t('users.myAccount', 'My Account')}
+              </span>
+              {user.role && (
+                <span
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm ${user.role === 'admin' ? 'bg-purple-500/30' : 'bg-green-500/30'}`}
+                >
+                  {user.role === 'admin'
+                    ? t('users.adminRole', 'Administrator')
+                    : t('users.userRole', 'User')}
+                </span>
+              )}
+              {user.isActive !== undefined && (
+                <span
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm ${user.isActive ? 'bg-green-500/30' : 'bg-red-500/30'}`}
+                >
+                  {user.isActive
+                    ? t('users.active', 'Active')
+                    : t('users.inactive', 'Inactive')}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
       </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 sm:gap-6">
+        {/* User Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className={`bg-gradient-to-br ${SECTION_COLORS.profile.gradient} backdrop-blur-md rounded-xl p-4 sm:p-6 border ${SECTION_COLORS.profile.border} shadow-lg`}
+        >
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center">
+            <FiUser
+              className={`${isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'} ${SECTION_COLORS.profile.icon}`}
+              size={20}
+            />
+            {t('users.personalInfo', 'Personal Information')}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiUser className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('registration.fullName', 'Full Name:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {user.fullName || user.username}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiMail className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('auth.email', 'Email:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {user.email || `${user.username}@example.com`}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiPhone className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('registration.phoneNumber', 'Phone Number:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {user.phoneNumber || t('users.notAvailable', 'N/A')}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiHome className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('registration.address', 'Address:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {user.address || t('users.notAvailable', 'N/A')}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Account Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className={`bg-gradient-to-br ${SECTION_COLORS.account.gradient} backdrop-blur-md rounded-xl p-4 sm:p-6 border ${SECTION_COLORS.account.border} shadow-lg`}
+        >
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center">
+            <FaIdCard
+              className={`${isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'} ${SECTION_COLORS.account.icon}`}
+              size={20}
+            />
+            {t('users.accountInfo', 'Account Information')}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiInfo className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('users.id', 'User ID:')}
+              </span>
+              <span className="text-white font-medium text-sm">{user.id}</span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiUser className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('users.username', 'Username:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {user.username}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiLock className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('auth.password', 'Password:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {/* Show password only if viewing own profile */}
+                {!params.id ? user.password : '•••••••'}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiShield className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('users.accountStatus', 'Account Status:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                <span
+                  className={`inline-block w-2 h-2 ${user.isActive !== false ? 'bg-green-500' : 'bg-red-500'} rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}
+                ></span>
+                {user.isActive !== false
+                  ? t('users.active', 'Active')
+                  : t('users.inactive', 'Inactive')}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Activity Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className={`bg-gradient-to-br ${SECTION_COLORS.activity.gradient} backdrop-blur-md rounded-xl p-4 sm:p-6 border ${SECTION_COLORS.activity.border} shadow-lg`}
+        >
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center">
+            <FiClock
+              className={`${isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'} ${SECTION_COLORS.activity.icon}`}
+              size={20}
+            />
+            {t('users.activityInfo', 'Activity Information')}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiCalendar className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('users.registrationDate', 'Registration Date:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {formatDate(user.dateJoined)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiClock className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('users.lastLogin', 'Last Login:')}
+              </span>
+              <span className="text-white font-medium text-sm">
+                {formatDate(user.lastLogin)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
+              <span className="text-white/70 flex items-center text-sm">
+                <FiShield className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                {t('users.role', 'User Role:')}
+              </span>
+              <span className="text-white font-medium text-sm capitalize">
+                {user.role || t('users.standardUser', 'Standard User')}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

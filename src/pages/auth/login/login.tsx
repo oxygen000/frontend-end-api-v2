@@ -18,9 +18,13 @@ function Login() {
     );
 
     if (user) {
+      // Store the logged-in user ID in localStorage
+      localStorage.setItem('loggedInUserId', user.id.toString());
+      localStorage.setItem('loggedInUsername', user.username);
+
       setError('');
       setIsLoading(false);
-      navigate('/home'); // توجيه إلى الصفحة الرئيسية
+      navigate('/home'); // Redirect to profile page instead of home
     } else {
       setError('Invalid username or password.');
       setIsLoading(false);

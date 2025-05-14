@@ -118,7 +118,20 @@
     "vehicleLicense": "رخصة المركبة",
     "caseDocuments": "مستندات القضية",
     "userAvatar": "صورة المستخدم",
-    "myProfile": "ملفي الشخصي"
+    "myProfile": "ملفي الشخصي",
+    "adminRole": "مدير النظام",
+    "userRole": "مستخدم",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "accountInfo": "معلومات الحساب",
+    "username": "اسم المستخدم",
+    "accountStatus": "حالة الحساب",
+    "activityInfo": "معلومات النشاط",
+    "lastLogin": "آخر تسجيل دخول",
+    "role": "دور المستخدم",
+    "standardUser": "مستخدم عادي",
+    "userProfile": "ملف المستخدم",
+    "myAccount": "حسابي"
   },
   "popups": {
     "addTitle": "اختر نوع البيانات المراد إضافتها",

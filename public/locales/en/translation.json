@@ -118,7 +118,20 @@
     "vehicleLicense": "Vehicle License",
     "caseDocuments": "Case Documents",
     "userAvatar": "User Avatar",
-    "myProfile": "My Profile"
+    "myProfile": "My Profile",
+    "adminRole": "Administrator",
+    "userRole": "User",
+    "active": "Active",
+    "inactive": "Inactive",
+    "accountInfo": "Account Information",
+    "username": "Username",
+    "accountStatus": "Account Status",
+    "activityInfo": "Activity Information",
+    "lastLogin": "Last Login",
+    "role": "User Role",
+    "standardUser": "Standard User",
+    "userProfile": "User Profile",
+    "myAccount": "My Account"
   },
   "popups": {
     "addTitle": "Select the type of data to add",

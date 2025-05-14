@@ -114,12 +114,12 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
               {/* Logout Button */}
               <div className="pt-6 border-t border-gray-700">
-                <button
-                  onClick={onClose}
+                <Link
+                to={"login"}
                   className={`w-full ${isRTL ? 'text-right' : 'text-left'} px-3 py-2 rounded hover:bg-red-600 transition`}
                 >
                   {t('auth.logout', 'Logout')}
-                </button>
+                </Link>
               </div>
             </div>
           </motion.aside>
