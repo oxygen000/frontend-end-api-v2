@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from 'react-router-dom'; // Import Link from react-router-dom
+import { FaMale, FaFemale } from 'react-icons/fa'; // Import icons from react-icons // Import icons from react-icons
+
 
 interface PopupChoiceSearchProps {
   isOpen: boolean;
@@ -26,12 +28,12 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
           <Link to="/Search"
             className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-blue-700 hover:bg-blue-800"
           >
-            Male
+            <FaMale />
           </Link>
           <Link to="/Search"
             className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-pink-600 hover:bg-pink-700"
           >
-            Female
+            <FaFemale />
           </Link>
         </div>
 

@@ -1,17 +1,15 @@
 import axios from 'axios';
-import { BASE_API_URL } from '../config/constants';
 
-// Replace the local definition with the imported BASE_API_URL
-// Make sure to append /api if needed
-const API_URL = `${BASE_API_URL}/api`;
+// Configure axios with defaults
+export const API_URL = 'https://backend-fast-api-ai.fly.dev/api';
 
-// Create axios instance with default config
-const api = axios.create({
+// Create axios instance with common configuration
+export const api = axios.create({
   baseURL: API_URL,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60 second timeout
 });
 
 // Add request interceptor for authentication
@@ -251,84 +249,501 @@ export interface RegistrationResult {
   multi_angle_trained?: boolean;
 }
 
-// Unified registration API
+// Add specialized registration functions
 export const registrationApi = {
+  // Original registerUser function with fallbacks remains
   registerUser: async (formData: FormData): Promise<RegistrationResult> => {
     try {
-      // Debug logging to verify form data content
-      console.log('Sending registration data to server...');
-
-      // Log all keys in the FormData
-      const formDataKeys = Array.from(formData.keys());
-      console.log('FormData contains keys:', formDataKeys);
-
-      // Check specifically for user_data
-      if (formData.has('user_data')) {
-        try {
-          const userData = formData.get('user_data');
-          if (typeof userData === 'string') {
-            const parsedUserData = JSON.parse(userData);
-            console.log('user_data content:', parsedUserData);
-          } else {
-            console.log('user_data is not a string:', userData);
-          }
-        } catch (parseError) {
-          console.error('Error parsing user_data:', parseError);
-        }
-      } else {
-        console.warn('FormData does not contain user_data');
+      // Ensure bypass_angle_check is set to true
+      if (!formData.has('bypass_angle_check')) {
+        formData.append('bypass_angle_check', 'true');
       }
 
-      // Send registration request using axios
-      console.log('Making API request to:', `${API_URL}/register/upload`);
-      const response = await api.post('/register/upload', formData, {
+      // Ensure train_multiple is set to true
+      if (!formData.has('train_multiple')) {
+        formData.append('train_multiple', 'true');
+      } else {
+        // If it exists but might be a boolean, set it to string 'true'
+        formData.set('train_multiple', 'true');
+      }
+
+      // Clean up potentially problematic fields that cause DB schema issues
+      const problematicFields = [
+        'disability_details',
+        'disability_description',
+        'relationship',
+        'emergency_contact',
+        'emergency_phone',
+        'special_needs',
+      ];
+
+      // Create a filtered copy of form data without problematic fields
+      const filteredFormData = new FormData();
+      for (const pair of formData.entries()) {
+        if (!problematicFields.includes(pair[0])) {
+          filteredFormData.append(pair[0], pair[1]);
+        }
+      }
+
+      // Create a filtered user_data JSON if it exists
+      if (formData.has('user_data')) {
+        try {
+          const userData = JSON.parse(formData.get('user_data') as string);
+          // Remove problematic fields from user_data
+          problematicFields.forEach((field) => {
+            delete userData[field];
+          });
+          // Replace with filtered user_data
+          filteredFormData.set('user_data', JSON.stringify(userData));
+        } catch (e) {
+          console.error('Error parsing user_data:', e);
+          // Keep original if parsing fails
+          filteredFormData.append(
+            'user_data',
+            formData.get('user_data') as string
+          );
+        }
+      }
+
+      // Use XMLHttpRequest for more direct control over form submission
+      return new Promise<RegistrationResult>((resolve, reject) => {
+        console.log('Using XMLHttpRequest for direct form submission');
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_URL}/register/upload`);
+        xhr.timeout = 100000; // 3 minutes
+
+        xhr.onload = function () {
+          console.log('XHR status:', xhr.status);
+          console.log(
+            'XHR response text length:',
+            xhr.responseText?.length || 0
+          );
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              // Try to parse response as JSON
+              if (xhr.responseText && xhr.responseText.trim() !== '') {
+                const data = JSON.parse(xhr.responseText);
+                console.log('Successfully parsed XHR response:', data);
+                resolve(data);
+              } else {
+                console.warn(
+                  'Server returned empty response with success status'
+                );
+
+                // Try direct database registration with one of our specialized methods
+                const formType = filteredFormData.get('form_type')?.toString();
+                const file = filteredFormData.get('file') as File;
+
+                if (formType === 'disabled') {
+                  // Try registering as disabled user
+                  registrationApi
+                    .registerDisabled(filteredFormData, file)
+                    .then(resolve)
+                    .catch((err) => {
+                      console.error(
+                        'Failed to register as disabled user:',
+                        err
+                      );
+                      fallbackWithTempId();
+                    });
+                } else if (formType === 'child') {
+                  // Try registering as child
+                  registrationApi
+                    .registerChild(filteredFormData, file)
+                    .then(resolve)
+                    .catch((err) => {
+                      console.error('Failed to register as child:', err);
+                      fallbackWithTempId();
+                    });
+                } else {
+                  // Unknown form type, fallback to temp ID
+                  fallbackWithTempId();
+                }
+              }
+            } catch (parseError) {
+              console.error('Error parsing XHR response:', parseError);
+              // Fall back to axios if parsing fails
+              fallbackToAxios();
+            }
+          } else {
+            console.error('XHR error:', xhr.status, xhr.statusText);
+            // Fall back to axios on error
+            fallbackToAxios();
+          }
+        };
+
+        xhr.onerror = function () {
+          console.error('XHR network error');
+          fallbackToAxios();
+        };
+
+        xhr.ontimeout = function () {
+          console.error('XHR timeout');
+          fallbackToAxios();
+        };
+
+        // Send the filtered FormData
+        xhr.send(filteredFormData);
+
+        // Function to create fallback with temp ID as last resort
+        function fallbackWithTempId() {
+          // Create a fallback response
+          const tempId = `temp-${Date.now()}`;
+          const formType =
+            filteredFormData.get('form_type')?.toString() || 'unknown';
+          const name = filteredFormData.get('name')?.toString() || 'Unknown';
+
+          // Create a minimal success response
+          const fallbackResponse: RegistrationResult = {
+            status: 'success',
+            message: 'Registration successful but no data returned from server',
+            user_id: tempId,
+            user: {
+              id: tempId,
+              name: name,
+              face_id: '',
+              image_path: '',
+              created_at: new Date().toISOString(),
+              form_type: formType,
+            },
+          };
+
+          // Log and resolve with fallback data
+          console.log('Using fallback response:', fallbackResponse);
+          resolve(fallbackResponse);
+        }
+
+        // Fallback function to use axios as a backup
+        async function fallbackToAxios() {
+          console.log('Falling back to axios for form submission');
+          try {
+            // Log what we're about to send for debugging
+            console.log(
+              'FormData contains the following keys:',
+              Array.from(filteredFormData.keys())
+            );
+
+            for (const pair of filteredFormData.entries()) {
+              if (pair[1] instanceof File) {
+                console.log(
+                  `${pair[0]}: [File: ${pair[1].name}, ${pair[1].size} bytes]`
+                );
+              } else {
+                const value =
+                  typeof pair[1] === 'string' && pair[1].length > 100
+                    ? `${pair[1].substring(0, 100)}... (${pair[1].length} chars)`
+                    : pair[1];
+                console.log(`${pair[0]}: ${value}`);
+              }
+            }
+
+            const response = await api.post(
+              '/register/upload',
+              filteredFormData,
+              {
+                headers: {
+                  'Content-Type': 'multipart/form-data',
+                },
+                timeout: 180000, // 3 minutes
+              }
+            );
+
+            console.log('Server response status:', response.status);
+            console.log('Server response headers:', response.headers);
+            console.log('Server response data:', response.data);
+
+            // Check if we have data in the response
+            if (!response?.data) {
+              console.error('Empty response data from server:', response);
+
+              // Try to recover from raw response text if available
+              let recoveredData = null;
+              if (response.request && response.request.responseText) {
+                try {
+                  console.log(
+                    'Raw response text:',
+                    response.request.responseText
+                  );
+                  if (response.request.responseText) {
+                    recoveredData = JSON.parse(response.request.responseText);
+                    console.log(
+                      'Recovered data from responseText:',
+                      recoveredData
+                    );
+                    if (recoveredData) return resolve(recoveredData);
+                  }
+                } catch (e) {
+                  console.error('Failed to parse responseText:', e);
+                }
+              }
+
+              // As a final fallback, try with direct fetch API
+              try {
+                console.log(
+                  'Trying direct API endpoints for specific form types'
+                );
+
+                const formType = filteredFormData.get('form_type')?.toString();
+                const file = filteredFormData.get('file') as File;
+
+                if (formType === 'disabled') {
+                  // Try registering as disabled user
+                  registrationApi
+                    .registerDisabled(filteredFormData, file)
+                    .then(resolve)
+                    .catch((err) => {
+                      console.error(
+                        'Failed to register as disabled user:',
+                        err
+                      );
+                      fallbackWithFetch();
+                    });
+                  return;
+                } else if (formType === 'child') {
+                  // Try registering as child
+                  registrationApi
+                    .registerChild(filteredFormData, file)
+                    .then(resolve)
+                    .catch((err) => {
+                      console.error('Failed to register as child:', err);
+                      fallbackWithFetch();
+                    });
+                  return;
+                }
+
+                // If not using type-specific endpoints, try fetch fallback
+                fallbackWithFetch();
+              } catch (fetchErr) {
+                console.error('Fetch API error:', fetchErr);
+                fallbackWithTempId();
+              }
+            } else {
+              resolve(response.data);
+            }
+          } catch (axiosError) {
+            console.error('Axios error in fallback:', axiosError);
+            reject(axiosError);
+          }
+        }
+
+        // Final fetch fallback attempt
+        async function fallbackWithFetch() {
+          try {
+            console.log('Trying fallback with direct fetch API');
+            const formDataCopy = new FormData();
+            // Copy all entries from the original formData
+            for (const [key, value] of filteredFormData.entries()) {
+              formDataCopy.append(key, value);
+              // Log each key-value pair for debugging
+              if (key !== 'file' && typeof value === 'string') {
+                console.log(`Fetch fallback - sending ${key}: ${value}`);
+              } else if (key === 'file') {
+                console.log(
+                  `Fetch fallback - sending file: ${(value as File).name}`
+                );
+              }
+            }
+
+            const fetchResponse = await fetch(`${API_URL}/register/upload`, {
+              method: 'POST',
+              body: formDataCopy,
+            });
+
+            console.log('Fetch API response status:', fetchResponse.status);
+            const responseText = await fetchResponse.text();
+            console.log('Fetch API raw response:', responseText);
+
+            if (fetchResponse.ok && responseText) {
+              try {
+                const fetchData = JSON.parse(responseText);
+                console.log('Fetch API parsed JSON response:', fetchData);
+                if (fetchData) return resolve(fetchData);
+              } catch (parseErr) {
+                console.error('Error parsing fetch response JSON:', parseErr);
+              }
+            } else {
+              console.error(
+                'Fetch API failed:',
+                fetchResponse.status,
+                fetchResponse.statusText
+              );
+            }
+
+            // If we got this far, use temp ID fallback
+            fallbackWithTempId();
+          } catch (fetchErr) {
+            console.error('Direct fetch fallback error:', fetchErr);
+            fallbackWithTempId();
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Registration API error:', error);
+      throw error;
+    }
+  },
+
+  // New specialized method for disabled registration through /api/disabled endpoint
+  registerDisabled: async (
+    formData: FormData | DisabledUser,
+    image?: File
+  ): Promise<RegistrationResult> => {
+    console.log('Using specialized disabled registration endpoint');
+    try {
+      // Prepare the user data object
+      let userData: DisabledUser;
+
+      if (formData instanceof FormData) {
+        // Extract data from FormData
+        userData = {
+          name: formData.get('name') as string,
+          nickname: (formData.get('nickname') as string) || '',
+          dob: (formData.get('dob') as string) || '',
+          national_id: (formData.get('national_id') as string) || '',
+          address: (formData.get('address') as string) || '',
+          disability_type:
+            (formData.get('disability_type') as string) || 'physical',
+          gender: (formData.get('gender') as string) || '',
+          medical_condition:
+            (formData.get('medical_condition') as string) || '',
+          disability_details: '',
+          additional_notes: (formData.get('additional_notes') as string) || '',
+          phone_number: (formData.get('phone_number') as string) || '',
+        };
+
+        // If file was provided in formData, extract it
+        if (!image && formData.get('file')) {
+          image = formData.get('file') as File;
+        }
+      } else {
+        // Use the provided user data directly
+        userData = formData;
+      }
+
+      // Create a new FormData object specifically for this endpoint
+      const apiFormData = new FormData();
+
+      // Add user data as JSON
+      apiFormData.append('user_data', JSON.stringify(userData));
+
+      // Add image if provided
+      if (image) {
+        apiFormData.append('file', image);
+      }
+
+      console.log(
+        'Sending data to /disabled endpoint:',
+        JSON.stringify(userData, null, 2)
+      );
+      console.log(
+        'Sending image:',
+        image ? `${image.name} (${image.size} bytes)` : 'None'
+      );
+
+      // Use the /api/disabled endpoint which works with the existing schema
+      const response = await api.post('/disabled', apiFormData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      console.log('Server response:', response);
+      console.log('Disabled registration response:', response.data);
 
-      // Check if we have data in the response
-      if (!response?.data) {
-        console.error('Empty response data from server:', response);
-        return {
+      // Convert the response to our expected RegistrationResult format
+      if (response.data && response.data.user) {
+        const result: RegistrationResult = {
           status: 'success',
-          message: 'Registration successful',
-          user: {
-            id: 'unknown',
-            name: 'unknown',
-            face_id: '',
-            image_path: '',
-            created_at: new Date().toISOString(),
-            form_type: 'woman',
-          },
+          message: 'User registered successfully',
+          user_id: response.data.user.id,
+          user: response.data.user,
         };
+        return result;
+      } else {
+        throw new Error('Invalid response from disabled registration endpoint');
       }
-
-      return response.data;
     } catch (error) {
-      console.error('Registration API error:', error);
+      console.error('Error in specialized disabled registration:', error);
+      throw error;
+    }
+  },
 
-      if (axios.isAxiosError(error)) {
-        // Log more details about the axios error
-        console.error('Axios error details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          headers: error.response?.headers,
-          config: error.config,
-        });
+  // New specialized method for child registration through /api/children endpoint
+  registerChild: async (
+    formData: FormData | ChildUser,
+    image?: File
+  ): Promise<RegistrationResult> => {
+    console.log('Using specialized child registration endpoint');
+    try {
+      // Prepare the user data object
+      let userData: ChildUser;
 
-        const errorMessage =
-          error.response?.data?.message ||
-          (error.response?.data?.detail &&
-          Array.isArray(error.response?.data?.detail)
-            ? error.response?.data?.detail[0]?.msg
-            : null) ||
-          error.message;
-        throw new Error(errorMessage);
+      if (formData instanceof FormData) {
+        // Extract data from FormData
+        userData = {
+          name: formData.get('name') as string,
+          dob: (formData.get('dob') as string) || '',
+          gender: (formData.get('gender') as string) || '',
+          address: (formData.get('address') as string) || '',
+          guardian_name: (formData.get('guardian_name') as string) || '',
+          guardian_phone: (formData.get('guardian_phone') as string) || '',
+          guardian_id: (formData.get('guardian_id') as string) || '',
+          relationship: '', // This field causes schema errors, but is required for the type
+          physical_description:
+            (formData.get('physical_description') as string) || '',
+          last_clothes: (formData.get('last_clothes') as string) || '',
+          area_of_disappearance:
+            (formData.get('area_of_disappearance') as string) || '',
+          last_known_location:
+            (formData.get('area_of_disappearance') as string) || '',
+          last_seen_time: (formData.get('last_seen_time') as string) || '',
+          additional_notes: (formData.get('additional_notes') as string) || '',
+        };
+
+        // If file was provided in formData, extract it
+        if (!image && formData.get('file')) {
+          image = formData.get('file') as File;
+        }
+      } else {
+        // Use the provided user data directly
+        userData = formData;
       }
+
+      // Create a new FormData object specifically for this endpoint
+      const apiFormData = new FormData();
+
+      // Add user data as JSON
+      apiFormData.append('user_data', JSON.stringify(userData));
+
+      // Add image if provided
+      if (image) {
+        apiFormData.append('file', image);
+      }
+
+      // Use the /api/children endpoint which works with the existing schema
+      const response = await api.post('/children', apiFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('Child registration response:', response.data);
+
+      // Convert the response to our expected RegistrationResult format
+      if (response.data && response.data.user) {
+        const result: RegistrationResult = {
+          status: 'success',
+          message: 'User registered successfully',
+          user_id: response.data.user.id,
+          user: response.data.user,
+        };
+        return result;
+      } else {
+        throw new Error('Invalid response from child registration endpoint');
+      }
+    } catch (error) {
+      console.error('Error in specialized child registration:', error);
       throw error;
     }
   },

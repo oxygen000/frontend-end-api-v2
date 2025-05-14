@@ -18,13 +18,9 @@ import {
   FiTrash2,
   FiEye,
 } from 'react-icons/fi';
-import {
-  FaIdCard,
-  FaUserTag,
-  FaFingerprint,
-  FaCar,
-} from 'react-icons/fa';
+import { FaIdCard, FaUserTag, FaFingerprint, FaCar } from 'react-icons/fa';
 import axios from 'axios';
+import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
 
 interface User {
   id: string;
@@ -123,9 +119,10 @@ function Userdata() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isIdentityRevealed, ] = useState<boolean>(true);
+  const [isIdentityRevealed] = useState<boolean>(true);
   const [showEmptyFields] = useState<boolean>(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+  const { t, isRTL } = useTranslationWithFallback();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -182,12 +179,12 @@ function Userdata() {
     return (
       <div className="p-6 text-center">
         <div className="bg-red-100/20 backdrop-blur-md border border-red-400/30 text-red-700 px-4 py-3 rounded">
-          <p>{error || 'User not found'}</p>
+          <p>{error || t('users.notFound', 'User not found')}</p>
           <button
             onClick={() => navigate('/search')}
             className="mt-2 bg-blue-600/70 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded"
           >
-            Back to Search
+            {t('common.back', 'Back to Search')}
           </button>
         </div>
       </div>
@@ -273,15 +270,15 @@ function Userdata() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Back button */}
       <div className="mb-6 flex justify-between">
         <Link
           to="/search"
           className="px-6 py-2 bg-blue-600/30 text-white rounded-md hover:bg-blue-700/50 shadow-lg hover:shadow-xl hover:shadow-blue-500/50 backdrop-blur-lg backdrop-opacity-60 transition-all duration-300"
         >
-          <FiArrowLeft className="inline mr-2" />
-          Back to Search
+          <FiArrowLeft className={`inline ${isRTL ? 'ml-2' : 'mr-2'}`} />
+          {t('common.back', 'Back to Search')}
         </Link>
       </div>
 
@@ -310,37 +307,39 @@ function Userdata() {
 
           <div className="text-center md:text-left flex-1">
             <div className="flex items-center justify-center md:justify-start">
-              <h1 className="text-2xl font-bold text-white">
-              {user.name}
-              </h1>
-             
+              <h1 className="text-2xl font-bold text-white">{user.name}</h1>
             </div>
             <p className="text-white/70 mt-1">
               {user.form_type && (
                 <span className="capitalize bg-white/20 px-3 py-1 rounded-full text-sm">
-                  {user.form_type}
+                  {t(`search.formTypes.${user.form_type}`, user.form_type)}
                 </span>
               )}
               {user.department && (
                 <span className="ml-2 bg-blue-500/30 px-3 py-1 rounded-full text-sm">
-                  {isIdentityRevealed ? user.department : 'Department'}
+                  {isIdentityRevealed
+                    ? user.department
+                    : t('users.department', 'Department')}
                 </span>
               )}
               {isChildRecord && (
                 <span className="ml-2 bg-amber-500/50 text-white px-3 py-1 rounded-full text-sm">
-                  Child Record
+                  {t('users.childRecord', 'Child Record')}
                 </span>
               )}
             </p>
             <p className="text-white/70 mt-2 flex items-center">
-              <FiCalendar className="inline mr-2" />
-              Registered on {formatDate(user.created_at)}
+              <FiCalendar className={`inline ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {t('users.registeredOn', 'Registered on')}{' '}
+              {formatDate(user.created_at)}
             </p>
 
             {user.has_criminal_record === 1 && (
               <div className="mt-3 inline-block bg-red-500/30 text-white px-4 py-1 rounded-full text-sm font-medium">
-                <FiAlertCircle className="inline mr-2" />
-                Has Criminal Record
+                <FiAlertCircle
+                  className={`inline ${isRTL ? 'ml-2' : 'mr-2'}`}
+                />
+                {t('users.hasCriminalRecord', 'Has Criminal Record')}
               </div>
             )}
           </div>
@@ -359,35 +358,43 @@ function Userdata() {
             className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-6 border border-white/30 shadow-lg"
           >
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FaFingerprint className="mr-3 text-blue-400" size={22} />
-              Personal Information
+              <FaFingerprint
+                className={`${isRTL ? 'ml-3' : 'mr-3'} text-blue-400`}
+                size={22}
+              />
+              {t('users.personalInfo', 'Personal Information')}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiHash className="mr-2" /> ID:
+                  <FiHash className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('users.id', 'ID:')}
                 </span>
                 <span className="text-white font-medium">
-                  {user.id ? `${user.id.substring(0, 8)}...` : 'Not available'}
+                  {user.id
+                    ? `${user.id.substring(0, 8)}...`
+                    : t('users.notAvailable', 'Not available')}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiUser className="mr-2" /> Face ID:
+                  <FiUser className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('users.faceId', 'Face ID:')}
                 </span>
                 <span className="text-white font-medium">
                   {user.face_id
                     ? `${user.face_id.substring(0, 8)}...`
-                    : 'Not available'}
+                    : t('users.notAvailable', 'Not available')}
                 </span>
               </div>
 
               {(user.employee_id || showEmptyFields) && (
                 <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                   <span className="text-white/70 flex items-center">
-                    <FiBriefcase className="mr-2" /> Employee ID:
+                    <FiBriefcase className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                    {t('users.employeeId', 'Employee ID:')}
                   </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.employee_id)}
@@ -397,17 +404,19 @@ function Userdata() {
 
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiHash className="mr-2" /> Form Type:
+                  <FiHash className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('users.formType', 'Form Type:')}
                 </span>
                 <span className="text-white font-medium capitalize">
-                  {user.form_type}
+                  {t(`search.formTypes.${user.form_type}`, user.form_type)}
                 </span>
               </div>
 
               {(user.occupation || showEmptyFields) && (
                 <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                   <span className="text-white/70 flex items-center">
-                    <FiBriefcase className="mr-2" /> Occupation:
+                    <FiBriefcase className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                    {t('users.occupation', 'Occupation:')}
                   </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.occupation)}
@@ -418,7 +427,8 @@ function Userdata() {
               {(user.address || showEmptyFields) && (
                 <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                   <span className="text-white/70 flex items-center">
-                    <FiHome className="mr-2" /> Address:
+                    <FiHome className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                    {t('registration.address', 'Address:')}
                   </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.address)}
@@ -429,7 +439,8 @@ function Userdata() {
               {(user.updated_at || showEmptyFields) && (
                 <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                   <span className="text-white/70 flex items-center">
-                    <FiCalendar className="mr-2" /> Last Updated:
+                    <FiCalendar className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                    {t('users.lastUpdated', 'Last Updated:')}
                   </span>
                   <span className="text-white font-medium">
                     {formatDate(user.updated_at)}
@@ -449,64 +460,80 @@ function Userdata() {
             >
               <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
                 <FaUserTag
-                  className={`mr-3 ${SECTION_COLORS.child.icon}`}
+                  className={`${isRTL ? 'ml-3' : 'mr-3'} ${SECTION_COLORS.child.icon}`}
                   size={22}
                 />
-                Child Information
+                {t('users.childInfo', 'Child Information')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Date of Birth:</span>
+                  <span className="text-white/70">
+                    {t('registration.dateOfBirth', 'Date of Birth:')}
+                  </span>
                   <span className="text-white font-medium">
                     {formatDate(user.date_of_birth)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Physical Description:</span>
+                  <span className="text-white/70">
+                    {t('users.physicalDescription', 'Physical Description:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.physical_description)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Last Clothes:</span>
+                  <span className="text-white/70">
+                    {t('users.lastClothes', 'Last Clothes:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.last_clothes)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Area of Disappearance:</span>
+                  <span className="text-white/70">
+                    {t('users.areaOfDisappearance', 'Area of Disappearance:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.area_of_disappearance)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Last Seen Time:</span>
+                  <span className="text-white/70">
+                    {t('users.lastSeenTime', 'Last Seen Time:')}
+                  </span>
                   <span className="text-white font-medium">
                     {formatDate(user.last_seen_time)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Guardian Name:</span>
+                  <span className="text-white/70">
+                    {t('users.guardianName', 'Guardian Name:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.guardian_name)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Guardian Phone:</span>
+                  <span className="text-white/70">
+                    {t('users.guardianPhone', 'Guardian Phone:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.guardian_phone)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Guardian ID:</span>
+                  <span className="text-white/70">
+                    {t('users.guardianId', 'Guardian ID:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.guardian_id)}
                   </span>
@@ -525,50 +552,72 @@ function Userdata() {
             >
               <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
                 <FiInfo
-                  className={`mr-3 ${SECTION_COLORS.disabled.icon}`}
+                  className={`${isRTL ? 'ml-3' : 'mr-3'} ${SECTION_COLORS.disabled.icon}`}
                   size={22}
                 />
-                Disability Information
+                {t('forms.disabled.disabilityInfo', 'Disability Information')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Disability Type:</span>
+                  <span className="text-white/70">
+                    {t('forms.disabled.disabilityType', 'Disability Type:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {maskSensitiveInfo(user.disability_type)}
+                    {user.disability_type &&
+                      t(
+                        user.disability_type,
+                        maskSensitiveInfo(user.disability_type)
+                      )}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Disability Description:</span>
+                  <span className="text-white/70">
+                    {t(
+                      'forms.disabled.disabilityDetails',
+                      'Disability Description:'
+                    )}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.disability_description)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Medical Condition:</span>
+                  <span className="text-white/70">
+                    {t(
+                      'forms.disabled.medicalConditions',
+                      'Medical Condition:'
+                    )}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.medical_condition)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Special Needs:</span>
+                  <span className="text-white/70">
+                    {t('forms.disabled.specialNeeds', 'Special Needs:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.special_needs)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Emergency Contact:</span>
+                  <span className="text-white/70">
+                    {t('forms.disabled.emergencyContact', 'Emergency Contact:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.emergency_contact)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70">Emergency Phone:</span>
+                  <span className="text-white/70">
+                    {t('users.emergencyPhone', 'Emergency Phone:')}
+                  </span>
                   <span className="text-white font-medium">
                     {maskSensitiveInfo(user.emergency_phone)}
                   </span>
@@ -590,50 +639,62 @@ function Userdata() {
                 >
                   <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
                     <FaCar
-                      className={`mr-3 ${user.form_type === 'woman' ? SECTION_COLORS.woman.icon : SECTION_COLORS.man.icon}`}
+                      className={`${isRTL ? 'mr-3' : 'ml-3'} ${user.form_type === 'woman' ? SECTION_COLORS.woman.icon : SECTION_COLORS.man.icon}`}
                       size={22}
                     />
-                    Vehicle Information
+                    {t('users.vehicleInfo', 'Vehicle Information')}
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">License Plate:</span>
+                      <span className="text-white/70">
+                        {t('users.licensePlate', 'License Plate:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.license_plate)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Vehicle Model:</span>
+                      <span className="text-white/70">
+                        {t('users.vehicleModel', 'Vehicle Model:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.vehicle_model)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Vehicle Color:</span>
+                      <span className="text-white/70">
+                        {t('users.vehicleColor', 'Vehicle Color:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.vehicle_color)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Chassis Number:</span>
+                      <span className="text-white/70">
+                        {t('users.chassisNumber', 'Chassis Number:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.chassis_number)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Vehicle Number:</span>
+                      <span className="text-white/70">
+                        {t('users.vehicleNumber', 'Vehicle Number:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.vehicle_number)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">License Expiration:</span>
+                      <span className="text-white/70">
+                        {t('users.licenseExpiration', 'License Expiration:')}
+                      </span>
                       <span className="text-white font-medium">
                         {formatDate(user.license_expiration)}
                       </span>
@@ -652,50 +713,62 @@ function Userdata() {
                 >
                   <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
                     <FiMap
-                      className={`mr-3 ${user.form_type === 'woman' ? SECTION_COLORS.woman.icon : SECTION_COLORS.man.icon}`}
+                      className={`${isRTL ? 'mr-3' : 'ml-3'} ${user.form_type === 'woman' ? SECTION_COLORS.woman.icon : SECTION_COLORS.man.icon}`}
                       size={22}
                     />
-                    Travel Information
+                    {t('users.travelInfo', 'Travel Information')}
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Travel Date:</span>
+                      <span className="text-white/70">
+                        {t('users.travelDate', 'Travel Date:')}
+                      </span>
                       <span className="text-white font-medium">
                         {formatDate(user.travel_date)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Travel Destination:</span>
+                      <span className="text-white/70">
+                        {t('users.travelDestination', 'Travel Destination:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.travel_destination)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Arrival Airport:</span>
+                      <span className="text-white/70">
+                        {t('users.arrivalAirport', 'Arrival Airport:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.arrival_airport)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Arrival Date:</span>
+                      <span className="text-white/70">
+                        {t('users.arrivalDate', 'Arrival Date:')}
+                      </span>
                       <span className="text-white font-medium">
                         {formatDate(user.arrival_date)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Flight Number:</span>
+                      <span className="text-white/70">
+                        {t('users.flightNumber', 'Flight Number:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.flight_number)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Return Date:</span>
+                      <span className="text-white/70">
+                        {t('users.returnDate', 'Return Date:')}
+                      </span>
                       <span className="text-white font-medium">
                         {formatDate(user.return_date)}
                       </span>
@@ -713,50 +786,62 @@ function Userdata() {
                   className="bg-red-500/20 backdrop-blur-md rounded-xl p-6 border border-red-500/30 shadow-lg"
                 >
                   <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                    <FiAlertCircle className="mr-2" />
-                    Case Information
+                    <FiAlertCircle className={`${isRTL ? 'mr-2' : 'ml-2'}`} />
+                    {t('users.caseInfo', 'Case Information')}
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
                       <span className="text-white/70">
-                        Has Criminal Record:
+                        {t('users.hasCriminalRecord', 'Has Criminal Record:')}
                       </span>
                       <span className="text-white font-medium">
-                        {user.has_criminal_record === 1 ? 'Yes' : 'No'}
+                        {user.has_criminal_record === 1
+                          ? t('common.yes', 'Yes')
+                          : t('common.no', 'No')}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Case Details:</span>
+                      <span className="text-white/70">
+                        {t('users.caseDetails', 'Case Details:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.case_details)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Police Station:</span>
+                      <span className="text-white/70">
+                        {t('users.policeStation', 'Police Station:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.police_station)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Case Number:</span>
+                      <span className="text-white/70">
+                        {t('users.caseNumber', 'Case Number:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.case_number)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Judgment:</span>
+                      <span className="text-white/70">
+                        {t('users.judgment', 'Judgment:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.judgment)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white/70">Accusation:</span>
+                      <span className="text-white/70">
+                        {t('users.accusation', 'Accusation:')}
+                      </span>
                       <span className="text-white font-medium">
                         {maskSensitiveInfo(user.accusation)}
                       </span>
@@ -767,28 +852,6 @@ function Userdata() {
             </>
           )}
 
-          {/* Additional Data (if applicable) */}
-          {user.additional_data && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-gray-500/20 backdrop-blur-md rounded-xl p-6 border border-gray-500/30 shadow-lg"
-            >
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FiFileText className="mr-2" />
-                Additional Data
-              </h2>
-
-              <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Additional Information:</span>
-                <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.additional_data)}
-                </span>
-              </div>
-            </motion.div>
-          )}
-
           {/* Common Information Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -797,62 +860,82 @@ function Userdata() {
             className="bg-gradient-to-br from-teal-500/20 to-teal-500/10 backdrop-blur-md rounded-xl p-6 border border-teal-500/30 shadow-lg"
           >
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FiInfo className="mr-3 text-teal-400" size={22} />
-              Common Information
+              <FiInfo
+                className={`${isRTL ? 'ml-3' : 'mr-3'} text-teal-400`}
+                size={22}
+              />
+              {t('users.commonInfo', 'Common Information')}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiUser className="mr-2" /> Full Name:
+                  <FiUser className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('registration.fullName', 'Full Name:')}
                 </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.name || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.name || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiUser className="mr-2" /> Nickname:
+                  <FiUser className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('registration.nickname', 'Nickname:')}
                 </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.nickname || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.nickname || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiCalendar className="mr-2" /> Date of Birth:
+                  <FiCalendar className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('registration.dateOfBirth', 'Date of Birth:')}
                 </span>
                 <span className="text-white font-medium">
-                  {formatDate(user.dob || user.date_of_birth) || 'N/A'}
+                  {formatDate(user.dob || user.date_of_birth) ||
+                    t('users.notAvailable', 'N/A')}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiHash className="mr-2" /> National ID:
+                  <FiHash className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('registration.nationalId', 'National ID:')}
                 </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.national_id || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.national_id || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiHome className="mr-2" /> Address:
+                  <FiHome className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('registration.address', 'Address:')}
                 </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.address || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.address || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
                 <span className="text-white/70 flex items-center">
-                  <FiTag className="mr-2" /> Category:
+                  <FiTag className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
+                  {t('users.category', 'Category:')}
                 </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.category || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.category || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
             </div>
@@ -866,42 +949,58 @@ function Userdata() {
             className="bg-gradient-to-br from-blue-500/20 to-blue-500/10 backdrop-blur-md rounded-xl p-6 border border-blue-500/30 shadow-lg"
           >
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FiPhone className="mr-3 text-blue-400" size={22} />
-              Phone Numbers
+              <FiPhone
+                className={`${isRTL ? 'mr-3' : 'ml-3'} text-blue-400`}
+                size={22}
+              />
+              {t('users.phoneNumbers', 'Phone Numbers')}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Primary Phone:</span>
+                <span className="text-white/70">
+                  {t('users.primaryPhone', 'Primary Phone:')}
+                </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.phone_number || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.phone_number || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Secondary Phone:</span>
+                <span className="text-white/70">
+                  {t('users.secondaryPhone', 'Secondary Phone:')}
+                </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.second_phone_number || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.second_phone_number || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Phone Provider:</span>
+                <span className="text-white/70">
+                  {t('users.phoneProvider', 'Phone Provider:')}
+                </span>
                 <span className="text-white font-medium">
-                  {maskSensitiveInfo(user.phone_company || 'N/A')}
+                  {maskSensitiveInfo(
+                    user.phone_company || t('users.notAvailable', 'N/A')
+                  )}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                <span className="text-white/70">Registration Date:</span>
+                <span className="text-white/70">
+                  {t('users.registrationDate', 'Registration Date:')}
+                </span>
                 <span className="text-white font-medium">
-                  {formatDate(user.created_at) || 'N/A'}
+                  {formatDate(user.created_at) ||
+                    t('users.notAvailable', 'N/A')}
                 </span>
               </div>
             </div>
           </motion.div>
-
-         
         </div>
 
         {/* Right column - Actions and Identity Verification */}
@@ -914,8 +1013,11 @@ function Userdata() {
             className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg"
           >
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FiActivity className="mr-3 text-white" size={22} />
-              Actions
+              <FiActivity
+                className={`${isRTL ? 'mr-3' : 'ml-3'} text-white`}
+                size={22}
+              />
+              {t('users.actions', 'Actions')}
             </h2>
 
             <div className="flex flex-col gap-3">
@@ -923,7 +1025,8 @@ function Userdata() {
                 onClick={() => navigate(`/identification?id=${user.id}`)}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600/70 to-blue-700/70 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-colors duration-300 flex items-center justify-center"
               >
-                <FiEye className="mr-2" /> Verify Identity
+                <FiEye className={`${isRTL ? 'mr-2' : 'ml-2'}`} />{' '}
+                {t('users.verifyIdentity', 'Verify Identity')}
               </button>
 
               <button
@@ -934,14 +1037,16 @@ function Userdata() {
                 }
                 className="px-6 py-3 bg-gradient-to-r from-green-600/70 to-green-700/70 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-colors duration-300 flex items-center justify-center"
               >
-                <FiFileText className="mr-2" /> Edit Information
+                <FiFileText className={`${isRTL ? 'mr-2' : 'ml-2'}`} />{' '}
+                {t('users.editInformation', 'Edit Information')}
               </button>
 
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="px-6 py-3 bg-gradient-to-r from-red-600/70 to-red-700/70 hover:from-red-600 hover:to-red-700 text-white rounded-lg transition-colors duration-300 flex items-center justify-center"
               >
-                <FiTrash2 className="mr-2" /> Delete Record
+                <FiTrash2 className={`${isRTL ? 'mr-2' : 'ml-2'}`} />{' '}
+                {t('common.delete', 'Delete Record')}
               </button>
             </div>
 
@@ -954,24 +1059,26 @@ function Userdata() {
                   className="bg-gray-800 p-6 rounded-xl shadow-xl max-w-md w-full mx-4"
                 >
                   <h3 className="text-xl font-semibold text-white mb-4">
-                    Confirm Deletion
+                    {t('users.confirmDeletion', 'Confirm Deletion')}
                   </h3>
                   <p className="text-white/70 mb-6">
-                    Are you sure you want to delete this record? This action
-                    cannot be undone.
+                    {t(
+                      'users.deleteWarning',
+                      'Are you sure you want to delete this record? This action cannot be undone.'
+                    )}
                   </p>
                   <div className="flex justify-end gap-3">
                     <button
                       onClick={() => setShowDeleteConfirm(false)}
                       className="px-4 py-2 bg-gray-600/70 hover:bg-gray-600 text-white rounded-lg transition-colors duration-300"
                     >
-                      Cancel
+                      {t('common.cancel', 'Cancel')}
                     </button>
                     <button
                       onClick={handleDelete}
                       className="px-4 py-2 bg-red-600/70 hover:bg-red-600 text-white rounded-lg transition-colors duration-300"
                     >
-                      Delete
+                      {t('common.delete', 'Delete')}
                     </button>
                   </div>
                 </motion.div>
@@ -987,64 +1094,95 @@ function Userdata() {
             className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-6 border border-white/30 shadow-lg"
           >
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FaIdCard className="mr-3 text-white" size={22} />
-              Identity Verification
+              <FaIdCard
+                className={`${isRTL ? 'mr-3' : 'ml-3'} text-white`}
+                size={22}
+              />
+              {t('users.identityVerification', 'Identity Verification')}
             </h2>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-white/70">ID Verified:</span>
+                <span className="text-white/70">
+                  {t('users.idVerified', 'ID Verified:')}
+                </span>
                 <span className="text-white font-medium">
-                  {isIdentityRevealed ? 'Yes' : 'No'}
+                  {isIdentityRevealed
+                    ? t('common.yes', 'Yes')
+                    : t('common.no', 'No')}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-white/70">Face ID Verified:</span>
+                <span className="text-white/70">
+                  {t('users.faceIdVerified', 'Face ID Verified:')}
+                </span>
                 <span className="text-white font-medium">
-                  {isIdentityRevealed ? 'Yes' : 'No'}
+                  {isIdentityRevealed
+                    ? t('common.yes', 'Yes')
+                    : t('common.no', 'No')}
                 </span>
               </div>
 
               {user.employee_id && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Employee ID Verified:</span>
+                  <span className="text-white/70">
+                    {t('users.employeeIdVerified', 'Employee ID Verified:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Yes' : 'No'}
+                    {isIdentityRevealed
+                      ? t('common.yes', 'Yes')
+                      : t('common.no', 'No')}
                   </span>
                 </div>
               )}
 
               <div className="flex justify-between items-center">
-                <span className="text-white/70">Form Type Verified:</span>
+                <span className="text-white/70">
+                  {t('users.formTypeVerified', 'Form Type Verified:')}
+                </span>
                 <span className="text-white font-medium">
-                  {isIdentityRevealed ? 'Yes' : 'No'}
+                  {isIdentityRevealed
+                    ? t('common.yes', 'Yes')
+                    : t('common.no', 'No')}
                 </span>
               </div>
 
               {user.date_of_birth && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Date of Birth Verified:</span>
+                  <span className="text-white/70">
+                    {t('users.dateOfBirthVerified', 'Date of Birth Verified:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Yes' : 'No'}
+                    {isIdentityRevealed
+                      ? t('common.yes', 'Yes')
+                      : t('common.no', 'No')}
                   </span>
                 </div>
               )}
 
               {user.address && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Address Verified:</span>
+                  <span className="text-white/70">
+                    {t('users.addressVerified', 'Address Verified:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Yes' : 'No'}
+                    {isIdentityRevealed
+                      ? t('common.yes', 'Yes')
+                      : t('common.no', 'No')}
                   </span>
                 </div>
               )}
 
               {user.occupation && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Occupation Verified:</span>
+                  <span className="text-white/70">
+                    {t('users.occupationVerified', 'Occupation Verified:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Yes' : 'No'}
+                    {isIdentityRevealed
+                      ? t('common.yes', 'Yes')
+                      : t('common.no', 'No')}
                   </span>
                 </div>
               )}
@@ -1052,19 +1190,28 @@ function Userdata() {
               {user.has_criminal_record === 1 && (
                 <div className="flex justify-between items-center">
                   <span className="text-white/70">
-                    Criminal Record Verified:
+                    {t(
+                      'users.criminalRecordVerified',
+                      'Criminal Record Verified:'
+                    )}
                   </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Yes' : 'No'}
+                    {isIdentityRevealed
+                      ? t('common.yes', 'Yes')
+                      : t('common.no', 'No')}
                   </span>
                 </div>
               )}
 
               {hasVehicleInfo && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Vehicle Info Verified:</span>
+                  <span className="text-white/70">
+                    {t('users.vehicleInfoVerified', 'Vehicle Info Verified:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Yes' : 'No'}
+                    {isIdentityRevealed
+                      ? t('common.yes', 'Yes')
+                      : t('common.no', 'No')}
                   </span>
                 </div>
               )}
@@ -1079,31 +1226,41 @@ function Userdata() {
             className="bg-purple-500/20 backdrop-blur-md rounded-xl p-6 border border-purple-500/30 shadow-lg"
           >
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FaIdCard className="mr-2" />
-              Biometric Verification
+              <FaIdCard className={`${isRTL ? 'mr-2' : 'ml-2'}`} />
+              {t('users.biometricVerification', 'Biometric Verification')}
             </h2>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-white/70">Face Recognition:</span>
+                <span className="text-white/70">
+                  {t('users.faceRecognition', 'Face Recognition:')}
+                </span>
                 <span className="text-white font-medium">
-                  {isIdentityRevealed ? 'Verified' : 'Hidden'}
+                  {isIdentityRevealed
+                    ? t('common.verified', 'Verified')
+                    : t('common.hidden', 'Hidden')}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-white/70">Fingerprint:</span>
+                <span className="text-white/70">
+                  {t('users.fingerprint', 'Fingerprint:')}
+                </span>
                 <span className="text-white font-medium">
-                  {isIdentityRevealed ? 'Not Available' : 'Hidden'}
+                  {isIdentityRevealed
+                    ? t('common.notAvailable', 'Not Available')
+                    : t('common.hidden', 'Hidden')}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-white/70">Last Verification:</span>
+                <span className="text-white/70">
+                  {t('users.lastVerification', 'Last Verification:')}
+                </span>
                 <span className="text-white font-medium">
                   {isIdentityRevealed
                     ? formatDate(user.updated_at || user.created_at)
-                    : 'Hidden'}
+                    : t('common.hidden', 'Hidden')}
                 </span>
               </div>
             </div>
@@ -1117,45 +1274,59 @@ function Userdata() {
             className="bg-green-500/20 backdrop-blur-md rounded-xl p-6 border border-green-500/30 shadow-lg"
           >
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <FiFileText className="mr-2" />
-              Document Verification
+              <FiFileText className={`${isRTL ? 'mr-2' : 'ml-2'}`} />
+              {t('users.documentVerification', 'Document Verification')}
             </h2>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-white/70">ID Card:</span>
+                <span className="text-white/70">
+                  {t('users.idCard', 'ID Card:')}
+                </span>
                 <span className="text-white font-medium">
                   {isIdentityRevealed
                     ? user.employee_id
-                      ? 'Verified'
-                      : 'Not Available'
-                    : 'Hidden'}
+                      ? t('common.verified', 'Verified')
+                      : t('common.notAvailable', 'Not Available')
+                    : t('common.hidden', 'Hidden')}
                 </span>
               </div>
 
               {user.form_type === 'child' && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Birth Certificate:</span>
+                  <span className="text-white/70">
+                    {t('users.birthCertificate', 'Birth Certificate:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Not Available' : 'Hidden'}
+                    {isIdentityRevealed
+                      ? t('common.notAvailable', 'Not Available')
+                      : t('common.hidden', 'Hidden')}
                   </span>
                 </div>
               )}
 
               {hasVehicleInfo && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Vehicle License:</span>
+                  <span className="text-white/70">
+                    {t('users.vehicleLicense', 'Vehicle License:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Verified' : 'Hidden'}
+                    {isIdentityRevealed
+                      ? t('common.verified', 'Verified')
+                      : t('common.hidden', 'Hidden')}
                   </span>
                 </div>
               )}
 
               {user.has_criminal_record === 1 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Case Documents:</span>
+                  <span className="text-white/70">
+                    {t('users.caseDocuments', 'Case Documents:')}
+                  </span>
                   <span className="text-white font-medium">
-                    {isIdentityRevealed ? 'Verified' : 'Hidden'}
+                    {isIdentityRevealed
+                      ? t('common.verified', 'Verified')
+                      : t('common.hidden', 'Hidden')}
                   </span>
                 </div>
               )}

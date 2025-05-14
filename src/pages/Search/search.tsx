@@ -17,11 +17,10 @@ import {
   FaBuilding,
   FaUserTag,
 } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
 
 const API_URL = 'https://backend-fast-api-ai.fly.dev/api/users';
-
-// Add a new constant for all users endpoint
-const ALL_USERS_URL = 'https://backend-fast-api-ai.fly.dev/api/users/all';
 
 interface User {
   id: string;
@@ -88,6 +87,7 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 };
 
 const Search: React.FC = () => {
+  const { t } = useTranslationWithFallback();
   const [data, setData] = useState<ApiUser[]>([]);
   const [filteredData, setFilteredData] = useState<ApiUser[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -113,7 +113,7 @@ const Search: React.FC = () => {
       setError(null);
 
       // Use the all users endpoint instead
-      const response = await axios.get(ALL_USERS_URL);
+      const response = await axios.get(API_URL);
 
       if (response.data && Array.isArray(response.data)) {
         setData(response.data);
@@ -346,22 +346,6 @@ const Search: React.FC = () => {
     fetchData();
   };
 
-  const handleUserClick = async (user: ApiUser) => {
-    try {
-      // Try to get detailed user info first from the specific user endpoint
-      const response = await axios.get(`${API_URL}/${user.id}`);
-      if (response.data) {
-        setSelectedUser(response.data);
-        setShowModal(true);
-      }
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-      // If fetching detailed info fails, just use the user data we already have
-      setSelectedUser(user);
-      setShowModal(true);
-    }
-  };
-
   const closeModal = () => {
     setShowModal(false);
     setSelectedUser(null);
@@ -562,17 +546,20 @@ const Search: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-semibold text-white">
-            All Registered Users
+            {t('search.title', 'All Registered Users')}
           </h2>
           <p className="text-white/70 mt-1">
-            View and search through all registered profiles in the system
+            {t(
+              'search.subtitle',
+              'View and search through all registered profiles in the system'
+            )}
           </p>
         </div>
         <button
           onClick={handleRefresh}
           className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
-          Refresh
+          {t('common.refresh', 'Refresh')}
         </button>
       </div>
 
@@ -583,7 +570,10 @@ const Search: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={handleSearch}
-            placeholder="Search any registered user by name, ID, phone, department, or address"
+            placeholder={t(
+              'search.placeholder',
+              'Search any registered user by name, ID, phone, department, or address'
+            )}
             className="w-full p-3 pl-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <svg
@@ -606,7 +596,7 @@ const Search: React.FC = () => {
           <button
             onClick={toggleFilters}
             className={`p-3 rounded-lg transition-colors duration-200 ${showFilters ? 'bg-blue-600 text-white' : 'bg-white/20 text-white/70 hover:bg-white/30'}`}
-            aria-label="Toggle filters"
+            aria-label={t('search.toggleFilters', 'Toggle filters')}
           >
             <FaFilter />
           </button>
@@ -615,8 +605,8 @@ const Search: React.FC = () => {
             className="p-3 bg-white/20 text-white/70 rounded-lg hover:bg-white/30 transition-colors duration-200"
             aria-label={
               viewMode === 'grid'
-                ? 'Switch to list view'
-                : 'Switch to grid view'
+                ? t('search.switchToListView', 'Switch to list view')
+                : t('search.switchToGridView', 'Switch to grid view')
             }
           >
             {viewMode === 'grid' ? <FaList /> : <FaThLarge />}
@@ -633,26 +623,26 @@ const Search: React.FC = () => {
           className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-lg border border-white/20"
         >
           <h3 className="text-white font-semibold text-lg mb-5">
-            Filter Options
+            {t('search.filterOptions', 'Filter Options')}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Form Type Dropdown */}
             <div>
               <label htmlFor="formType" className="text-white block mb-1">
-                Form Type
+                {t('search.formType', 'Form Type')}
               </label>
               <select
                 id="formType"
                 name="formType"
                 value={filters.formType}
                 onChange={handleFilterChange}
-                className="w-full p-2 bg-white/20 border border-white/30 rounded text-white"
+                className="w-full p-2 bg-white/20 border border-white/30 rounded "
               >
-                <option value="">All</option>
+                <option value="">{t('search.all', 'All')}</option>
                 {FORM_TYPES.map(({ value, label }) => (
                   <option key={value} value={value}>
-                    {label}
+                    {t(`search.formTypes.${value}`, label)}
                   </option>
                 ))}
               </select>
@@ -660,11 +650,16 @@ const Search: React.FC = () => {
 
             {/* Sort Buttons */}
             <div className="md:col-span-2 lg:col-span-3">
-              <label className="text-white block mb-2">Sort By</label>
+              <label className="text-white block mb-2">
+                {t('search.sortBy', 'Sort By')}
+              </label>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { label: 'Name', field: 'name' },
-                  { label: 'Date', field: 'created_at' },
+                  { label: t('search.sortFields.name', 'Name'), field: 'name' },
+                  {
+                    label: t('search.sortFields.date', 'Date'),
+                    field: 'created_at',
+                  },
                 ].map(({ label, field }) => (
                   <button
                     key={field}
@@ -687,18 +682,11 @@ const Search: React.FC = () => {
       {/* Results count with improved styling and view toggle */}
       <div className="mb-4 text-white/70 flex justify-between items-center">
         <div>
-          Found{' '}
+          {t('search.found', 'Found')}{' '}
           <span className="font-medium text-white">{filteredData.length}</span>{' '}
-          {filteredData.length === 1 ? 'user' : 'users'}
-          {searchTerm === '' &&
-            filters.category === '' &&
-            filters.formType === '' &&
-            !filters.hasPhone &&
-            !filters.hasNationalId && (
-              <span className="ml-2 text-blue-300">
-                
-              </span>
-            )}
+          {filteredData.length === 1
+            ? t('search.userSingular', 'user')
+            : t('search.userPlural', 'users')}
         </div>
       </div>
 
@@ -752,11 +740,9 @@ const Search: React.FC = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  whileHover="hover"
                   whileTap="tap"
                   layoutId={user.id}
-                  className="bg-white/20 backdrop-blur-md rounded-lg p-4 border border-white/30 cursor-pointer"
-                  onClick={() => handleUserClick(user)}
+                  className="bg-white/20 backdrop-blur-md rounded-lg p-4 border border-white/30"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-blue-500">
@@ -800,9 +786,12 @@ const Search: React.FC = () => {
                         ID: {user.national_id || user.employee_id || 'N/A'}
                       </p>
                     </div>
-                    <div className="ml-4 px-4 py-2 bg-blue-600/70 hover:bg-blue-700 text-white rounded transition-colors duration-300 flex-shrink-0">
+                    <Link
+                      to={`/users/${user.id}`}
+                      className="ml-4 px-4 py-2 bg-blue-600/70 cursor-pointer hover:bg-blue-700 text-white rounded transition-colors duration-300 flex-shrink-0"
+                    >
                       View
-                    </div>
+                    </Link>
                   </div>
                 </motion.div>
               ))

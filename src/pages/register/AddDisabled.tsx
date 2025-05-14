@@ -8,6 +8,14 @@ import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import Webcam from 'react-webcam';
 import { toast } from 'react-hot-toast';
 import { registrationApi } from '../../services/api';
+import type { TelecomCompany } from '../../config/types';
+import {
+  sectionVariants,
+  errorVariants,
+  transition,
+} from '../../config/animations';
+import SuccessAnimation from '../../components/SuccessAnimation';
+import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
 
 interface FormData {
   // Basic information
@@ -19,7 +27,7 @@ interface FormData {
 
   // Contact information
   phone_number: string;
-  phone_company: string;
+  phone_company: TelecomCompany;
   second_phone_number: string;
 
   // Disability information
@@ -65,6 +73,7 @@ const initialFormData: FormData = {
 };
 
 function AddDisabled() {
+  const { t } = useTranslationWithFallback();
   const [currentSection, setCurrentSection] = useState(1);
   const [useCamera, setUseCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -72,6 +81,7 @@ function AddDisabled() {
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
 
   // Form data structure
   const [personDetails, setPersonDetails] = useState<FormData>(initialFormData);
@@ -91,7 +101,7 @@ function AddDisabled() {
           onClick={onPrev}
           className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
         >
-          Previous
+          {t('common.back', 'Previous')}
         </button>
       )}
       {onNext && (
@@ -100,42 +110,7 @@ function AddDisabled() {
           onClick={onNext}
           className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors ml-auto"
         >
-          Next
-        </button>
-      )}
-      {!onNext && (
-        <button
-          type="submit"
-          disabled={loading}
-          className={`px-6 py-2 ${loading ? 'bg-gray-500' : 'bg-green-600 hover:bg-green-700'} text-white rounded-md transition-colors ml-auto flex items-center`}
-        >
-          {loading ? (
-            <>
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Processing...
-            </>
-          ) : (
-            'Submit'
-          )}
+          {t('common.next', 'Next')}
         </button>
       )}
     </div>
@@ -190,18 +165,23 @@ function AddDisabled() {
 
     // Validate based on current section
     if (currentSection === 1) {
-      if (!personDetails.name) errors.push("Person's Name is required");
-      if (!personDetails.dob) errors.push('Date of Birth is required');
-      if (!personDetails.gender) errors.push('Gender is required');
+      if (!personDetails.name)
+        errors.push(t('validation.required', "Person's Name is required"));
+      if (!personDetails.dob)
+        errors.push(t('validation.required', 'Date of Birth is required'));
+      if (!personDetails.gender)
+        errors.push(t('validation.required', 'Gender is required'));
     } else if (currentSection === 2) {
-      if (!personDetails.phone_number) errors.push('Phone Number is required');
-      if (!personDetails.address) errors.push('Address is required');
+      if (!personDetails.phone_number)
+        errors.push(t('validation.required', 'Phone Number is required'));
+      if (!personDetails.address)
+        errors.push(t('validation.required', 'Address is required'));
     } else if (currentSection === 3) {
       if (!personDetails.disability_type)
-        errors.push('Disability Type is required');
+        errors.push(t('validation.required', 'Disability Type is required'));
     } else if (currentSection === 4) {
       if (!personDetails.image && !capturedImage)
-        errors.push("Person's Photo is required");
+        errors.push(t('validation.required', "Person's Photo is required"));
     }
 
     setFormErrors(errors);
@@ -260,21 +240,33 @@ function AddDisabled() {
       formDataToSend.append('name', personDetails.name);
       formDataToSend.append('nickname', personDetails.name.split(' ')[0] || '');
       formDataToSend.append('dob', personDetails.dob);
-      formDataToSend.append('national_id', personDetails.national_id);
+      formDataToSend.append('national_id', personDetails.national_id || '');
       formDataToSend.append('address', personDetails.address || '');
+      formDataToSend.append('gender', personDetails.gender || '');
+
+      // Ensure these fields are set, as they are required by the backend
       formDataToSend.append('phone_number', personDetails.phone_number || '');
       formDataToSend.append('phone_company', personDetails.phone_company || '');
       formDataToSend.append(
         'second_phone_number',
         personDetails.second_phone_number || ''
       );
+
       formDataToSend.append('category', 'disabled');
       formDataToSend.append('form_type', 'disabled');
+
+      // Ensure bypass parameters are set to true
+      formDataToSend.append('bypass_angle_check', 'true');
+      formDataToSend.append('train_multiple', 'true');
 
       // Disability-specific fields
       formDataToSend.append(
         'disability_type',
         personDetails.disability_type || ''
+      );
+      formDataToSend.append(
+        'disability_details',
+        personDetails.disability_description || ''
       );
       formDataToSend.append(
         'disability_description',
@@ -300,8 +292,50 @@ function AddDisabled() {
       formDataToSend.append('employee_id', '');
       formDataToSend.append('department', '');
       formDataToSend.append('role', '');
-      formDataToSend.append('bypass_angle_check', 'true');
-      formDataToSend.append('train_multiple', 'true');
+
+      // Create a complete data object and append as JSON
+      const userData = {
+        name: personDetails.name,
+        nickname: personDetails.name.split(' ')[0] || '',
+        dob: personDetails.dob,
+        date_of_birth: personDetails.dob,
+        national_id: personDetails.national_id || '',
+        address: personDetails.address || '',
+        category: 'disabled',
+        form_type: 'disabled',
+        phone_number: personDetails.phone_number || '',
+        phone_company: personDetails.phone_company || '',
+        second_phone_number: personDetails.second_phone_number || '',
+        disability_type: personDetails.disability_type || '',
+        disability_details: personDetails.disability_description || '',
+        disability_description: personDetails.disability_description || '',
+        medical_condition: personDetails.medical_condition || '',
+        special_needs: personDetails.special_needs || '',
+        emergency_contact: personDetails.emergency_contact || '',
+        emergency_phone: personDetails.emergency_phone || '',
+        additional_notes: personDetails.additional_notes || '',
+        gender: personDetails.gender || '',
+        employee_id: '',
+        department: '',
+        role: '',
+      };
+
+      // Append the complete user data in JSON format
+      formDataToSend.append('user_data', JSON.stringify(userData));
+      formDataToSend.append('disabled_data', JSON.stringify(userData));
+
+      // Log critical form values for debugging
+      console.log('Calling registerUser API with form data');
+      console.log(`Form data - name: ${personDetails.name}`);
+      console.log(`Form data - dob: ${personDetails.dob}`);
+      console.log(`Form data - form_type: ${personDetails.form_type}`);
+      console.log(`Form data - category: disabled`);
+      console.log(
+        `Form data - disability_type: ${personDetails.disability_type}`
+      );
+      console.log(
+        `Form data - has image: ${personDetails.image !== null || capturedImage !== null}`
+      );
 
       // Handle image from file input or webcam
       let imageFile: File | null = null;
@@ -355,30 +389,126 @@ function AddDisabled() {
         throw new Error('Please provide a photo');
       }
 
-      // Use the registration API service instead of direct fetch
-      const responseData = await registrationApi.registerUser(formDataToSend);
+      try {
+        const responseData = await registrationApi.registerUser(formDataToSend);
+        console.log('Response data from registerUser:', responseData);
 
-      // Handle successful registration
-      setSubmitSuccess(true);
+        // Handle successful registration
+        setSubmitSuccess(true);
 
-      // Show a success message with the name
-      const userName = responseData?.user?.name || personDetails.name;
-      toast.success(`${userName} registered successfully!`);
+        // If we didn't get proper data back, try to recreate it
+        let userId, userName, userObject;
 
-      // Reset form data after animation plays
-      setTimeout(() => {
-        setPersonDetails(initialFormData);
-        setCapturedImage(null);
-        setCurrentSection(1);
-        setSubmitSuccess(false);
+        // If we have a proper response, use it
+        if (responseData?.user_id || responseData?.user?.id) {
+          userId = responseData.user_id || responseData.user?.id || '';
+          userName = responseData.user?.name || personDetails.name;
+          userObject = responseData.user;
+        } else {
+          // Create a fallback temporary response object
+          userId = `temp-${Date.now()}`;
+          userName = personDetails.name;
+
+          // Create a minimal user object for display
+          userObject = {
+            id: userId,
+            name: userName,
+            face_id: '',
+            image_path: '',
+            created_at: new Date().toISOString(),
+            form_type: 'disabled',
+          };
+
+          // Save the form data to localStorage for potential recovery
+          try {
+            const formDataObj: Record<string, string> = {};
+            formDataToSend.forEach((value, key) => {
+              if (typeof value === 'string') {
+                formDataObj[key] = value;
+              }
+            });
+
+            localStorage.setItem(
+              `temp_registration_${userId}`,
+              JSON.stringify({
+                id: userId,
+                name: userName,
+                form_type: 'disabled',
+                timestamp: new Date().toISOString(),
+                data: formDataObj,
+              })
+            );
+
+            console.log(
+              `Saved form data to localStorage with key: temp_registration_${userId}`
+            );
+          } catch (e) {
+            console.error('Failed to save form data to localStorage:', e);
+          }
+        }
+
+        // Store the ID for reference
+        setRegisteredUserId(userId);
+        toast.success(`${userName} registered successfully!`);
+
+        console.log(
+          `User registered successfully with ID: ${userId || 'Not available'}`
+        );
+        console.log(`Image path: ${userObject?.image_path || 'Not available'}`);
+        console.log(
+          `Face ID: ${responseData?.face_id || userObject?.face_id || 'Not available'}`
+        );
+
+        // Reset form data after animation plays
+        setTimeout(() => {
+          setPersonDetails(initialFormData);
+          setCapturedImage(null);
+          setCurrentSection(1);
+          setSubmitSuccess(false);
+          setLoading(false);
+        }, 3000);
+      } catch (err) {
+        console.error('Registration error:', err);
+
+        // Check for specific face angle error
+        let errorMessage = 'An error occurred during registration';
+
+        if (err instanceof Error) {
+          errorMessage = err.message;
+
+          // Provide more user-friendly message for face angle errors
+          if (
+            errorMessage.includes('Face angle') ||
+            errorMessage.includes('face is not')
+          ) {
+            errorMessage =
+              "The uploaded photo doesn't meet our requirements. Please upload a clear front-facing photo where the person is looking directly at the camera.";
+          }
+        }
+
+        toast.error(errorMessage);
+        setFormErrors([errorMessage]);
         setLoading(false);
-      }, 3000);
+      }
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'An error occurred during registration';
+
+      // Check for specific face angle error
+      let errorMessage = 'An error occurred during registration';
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+
+        // Provide more user-friendly message for face angle errors
+        if (
+          errorMessage.includes('Face angle') ||
+          errorMessage.includes('face is not')
+        ) {
+          errorMessage =
+            "The uploaded photo doesn't meet our requirements. Please upload a clear front-facing photo where the person is looking directly at the camera.";
+        }
+      }
+
       toast.error(errorMessage);
       setFormErrors([errorMessage]);
       setLoading(false);
@@ -410,116 +540,85 @@ function AddDisabled() {
               clipRule="evenodd"
             />
           </svg>
-          Back to Home
+          {t('common.back', 'Back to Home')}
         </Link>
       </div>
 
-      {/* Form Progress Indicator */}
-      <div className="flex justify-center mt-6">
-        <div className="flex items-center space-x-4">
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(1)}`}
-          >
-            1
-          </div>
-          <div className="w-16 h-1 bg-gray-300">
+      {/* Form Progress Indicator - Only show when not in success state */}
+      {!submitSuccess && (
+        <div className="flex justify-center mt-6">
+          <div className="flex items-center space-x-4">
             <div
-              className={`h-full ${currentSection >= 2 ? 'bg-purple-600' : 'bg-gray-300'}`}
-            ></div>
-          </div>
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(2)}`}
-          >
-            2
-          </div>
-          <div className="w-16 h-1 bg-gray-300">
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(1)}`}
+            >
+              1
+            </div>
+            <div className="w-16 h-1 bg-gray-300">
+              <div
+                className={`h-full ${currentSection >= 2 ? 'bg-purple-600' : 'bg-gray-300'}`}
+              ></div>
+            </div>
             <div
-              className={`h-full ${currentSection >= 3 ? 'bg-purple-600' : 'bg-gray-300'}`}
-            ></div>
-          </div>
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(3)}`}
-          >
-            3
-          </div>
-          <div className="w-16 h-1 bg-gray-300">
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(2)}`}
+            >
+              2
+            </div>
+            <div className="w-16 h-1 bg-gray-300">
+              <div
+                className={`h-full ${currentSection >= 3 ? 'bg-purple-600' : 'bg-gray-300'}`}
+              ></div>
+            </div>
             <div
-              className={`h-full ${currentSection >= 4 ? 'bg-purple-600' : 'bg-gray-300'}`}
-            ></div>
-          </div>
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(4)}`}
-          >
-            4
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(3)}`}
+            >
+              3
+            </div>
+            <div className="w-16 h-1 bg-gray-300">
+              <div
+                className={`h-full ${currentSection >= 4 ? 'bg-purple-600' : 'bg-gray-300'}`}
+              ></div>
+            </div>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${indicatorClasses(4)}`}
+            >
+              4
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {submitSuccess ? (
-        <motion.div
-          className="max-w-xl mx-auto bg-purple-500/20 backdrop-blur-lg p-8 rounded-2xl shadow-lg border border-purple-300/30 text-white mt-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <motion.div
-            className="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </motion.div>
-          <h2 className="text-2xl font-bold mb-4 text-center">
-            Registration Successful!
-          </h2>
-          <p className="text-center mb-6">
-            The information has been recorded successfully.
-          </p>
-          <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-            <motion.div
-              className="bg-purple-500 h-2 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: '100%' }}
-              transition={{ duration: 3, ease: 'linear' }}
-            />
-          </div>
-          <p className="text-center mt-4 text-white/70">
-            Starting new registration in a moment...
-          </p>
-        </motion.div>
+        <SuccessAnimation
+          title={t('registration.success', 'Registration Successful!')}
+          message={t(
+            'forms.disabled.title',
+            'The information has been recorded successfully.'
+          )}
+          id={registeredUserId}
+          idLabel={t('registration.caseReferenceId', 'Registration ID:')}
+        />
       ) : (
         <motion.form
           onSubmit={handleFormSubmit}
-          className="space-y-6 max-w-xl mx-auto 
-             bg-white/20 backdrop-blur-lg 
-             p-8 rounded-2xl 
-             shadow-[0_0_30px_5px_rgba(128,0,128,0.5)] 
-             border border-white/30 
-             text-white"
+          className="max-w-xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(128,0,128,0.5)] border border-white/30 text-white space-y-8"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-center mb-6">
-            Accompanying Person Registration
+            {t('forms.disabled.title', 'Accompanying Person Registration')}
           </h2>
 
           {/* Display form errors */}
           {formErrors.length > 0 && (
-            <div className="bg-red-500/20 p-3 rounded-lg border border-red-500/30">
+            <motion.div
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
+              className="bg-red-500/20 p-3 rounded-lg border border-red-500/30"
+            >
               <ul className="list-disc pl-5">
                 {formErrors.map((error, index) => (
                   <li key={index} className="text-red-200">
@@ -527,45 +626,56 @@ function AddDisabled() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
           )}
 
           {/* Section 1: Basic Information */}
           {currentSection === 1 && (
             <motion.div
-              initial={{ x: -30, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">Basic Information</h3>
+              <h3 className="text-lg font-semibold">
+                {t('registration.personalInfo', 'Basic Information')}
+              </h3>
               <Input
-                label="Full Name"
+                label={t('registration.fullName', 'Full Name')}
                 name="name"
                 value={personDetails.name}
                 onChange={handleInputChange}
               />
               <Input
-                label="Date of Birth"
+                label={t('registration.dateOfBirth', 'Date of Birth')}
                 name="dob"
                 type="date"
                 value={personDetails.dob}
                 onChange={handleInputChange}
               />
               <div>
-                <label className="block font-medium mb-1">Gender</label>
+                <label className="block font-medium mb-1">
+                  {t('registration.gender', 'Gender')}
+                </label>
                 <select
                   name="gender"
                   value={personDetails.gender}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 bg-white/10 border text-black border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="">
+                    {t('registration.selectGender', 'Select Gender')}
+                  </option>
+                  <option value="male">{t('registration.male', 'Male')}</option>
+                  <option value="female">
+                    {t('registration.female', 'Female')}
+                  </option>
                 </select>
               </div>
               <Input
-                label="National ID"
+                label={t('registration.nationalId', 'National ID')}
                 name="national_id"
                 value={personDetails.national_id}
                 onChange={handleInputChange}
@@ -577,25 +687,43 @@ function AddDisabled() {
           {/* Section 2: Contact Information */}
           {currentSection === 2 && (
             <motion.div
-              initial={{ x: 30, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">Contact Information</h3>
+              <h3 className="text-lg font-semibold">
+                {t('registration.contactInfo', 'Contact Information')}
+              </h3>
               <Input
-                label="Phone Number"
+                label={t('registration.phoneNumber', 'Phone Number')}
                 name="phone_number"
                 value={personDetails.phone_number}
                 onChange={handleInputChange}
               />
-              <Input
-                label="Secondary Phone (Optional)"
-                name="second_phone_number"
-                value={personDetails.second_phone_number}
-                onChange={handleInputChange}
-              />
+              <div>
+                <label className="block font-medium mb-1">
+                  {t('registration.phoneCompany', 'Telecom Company')}
+                </label>
+                <select
+                  name="phone_company"
+                  value={personDetails.phone_company}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-white/10 text-black border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">
+                    {t('common.select', 'Select Company')}
+                  </option>
+                  <option value="Orange">Orange</option>
+                  <option value="Etisalat">Etisalat</option>
+                  <option value="Vodafone">Vodafone</option>
+                  <option value="WE">WE</option>
+                </select>
+              </div>
               <Textarea
-                label="Address"
+                label={t('registration.address', 'Address')}
                 name="address"
                 value={personDetails.address}
                 onChange={handleInputChange}
@@ -607,44 +735,64 @@ function AddDisabled() {
           {/* Section 3: Disability Information & Photo */}
           {currentSection === 3 && (
             <motion.div
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">Disability Information</h3>
+              <h3 className="text-lg font-semibold">
+                {t('forms.disabled.disabilityInfo', 'Disability Information')}
+              </h3>
               <div>
                 <label className="block font-medium mb-1">
-                  Disability Type
+                  {t('forms.disabled.disabilityType', 'Disability Type')}
                 </label>
                 <select
                   name="disability_type"
                   value={personDetails.disability_type}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 bg-white/10 border text-black border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="">Select Disability Type</option>
-                  <option value="physical">Physical</option>
-                  <option value="visual">Visual</option>
-                  <option value="hearing">Hearing</option>
-                  <option value="cognitive">Cognitive</option>
-                  <option value="multiple">Multiple Disabilities</option>
-                  <option value="other">Other</option>
+                  <option value="">
+                    {t('common.select', 'Select Disability Type')}
+                  </option>
+                  <option value="physical">{t('physical', 'Physical')}</option>
+                  <option value="visual">{t('visual', 'Visual')}</option>
+                  <option value="hearing">{t('hearing', 'Hearing')}</option>
+                  <option value="cognitive">
+                    {t('cognitive', 'Cognitive')}
+                  </option>
+                  <option value="multiple">
+                    {t('multiple', 'Multiple Disabilities')}
+                  </option>
+                  <option value="other">{t('common.other', 'Other')}</option>
                 </select>
               </div>
               <Textarea
-                label="Disability Details"
+                label={t(
+                  'forms.disabled.disabilityDetails',
+                  'Disability Details'
+                )}
                 name="disability_description"
                 value={personDetails.disability_description}
                 onChange={handleInputChange}
               />
               <Textarea
-                label="Medical Conditions (Optional)"
+                label={t(
+                  'forms.disabled.medicalConditions',
+                  'Medical Conditions (Optional)'
+                )}
                 name="medical_condition"
                 value={personDetails.medical_condition}
                 onChange={handleInputChange}
               />
               <Input
-                label="Additional Notes (Optional)"
+                label={t(
+                  'forms.disabled.specialNeeds',
+                  'Additional Notes (Optional)'
+                )}
                 name="special_needs"
                 value={personDetails.special_needs}
                 onChange={handleInputChange}
@@ -656,14 +804,21 @@ function AddDisabled() {
 
           {currentSection === 4 && (
             <motion.div
-              initial={{ x: 30, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">Person's Photo</h3>
+              <h3 className="text-lg font-semibold">
+                {t('registration.photo', "Person's Photo")}
+              </h3>
               <p className="text-white/80">
-                Please upload a clear photo of the person's face. This will be
-                used for identification purposes.
+                {t(
+                  'registration.photoInstructions',
+                  "Please upload a clear photo of the person's face. This will be used for identification purposes."
+                )}
               </p>
 
               {/* Toggle between upload and camera capture */}
@@ -674,8 +829,8 @@ function AddDisabled() {
                   className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
                 >
                   {personDetails.useCamera
-                    ? 'Switch to Upload'
-                    : 'Switch to Camera'}
+                    ? t('registration.switchToUpload', 'Switch to Upload')
+                    : t('registration.switchToCamera', 'Switch to Camera')}
                 </button>
                 <div>
                   {personDetails.useCamera ? (
@@ -697,7 +852,7 @@ function AddDisabled() {
                   >
                     <AnimatedFaceIcon
                       size="md"
-                      text="Click to upload"
+                      text={t('registration.clickToUpload', 'Click to upload')}
                       color="#ffff"
                     />
                   </div>
@@ -753,7 +908,8 @@ function AddDisabled() {
                         className="mt-4 px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center mx-auto"
                         onClick={captureImage}
                       >
-                        <FaCamera className="mr-2" /> Capture Photo
+                        <FaCamera className="mr-2" />{' '}
+                        {t('registration.capturePhoto', 'Capture Photo')}
                       </button>
                     </>
                   ) : (
@@ -779,7 +935,8 @@ function AddDisabled() {
                         className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
                         onClick={retakePhoto}
                       >
-                        <FaRedo className="mr-2" /> Retake Photo
+                        <FaRedo className="mr-2" />{' '}
+                        {t('registration.retakePhoto', 'Retake Photo')}
                       </button>
                     </>
                   )}
@@ -848,7 +1005,7 @@ function AddDisabled() {
                           d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Processing...
+                      {t('common.loading', 'Processing...')}
                     </div>
                   ) : (
                     <>
@@ -866,7 +1023,10 @@ function AddDisabled() {
                           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      Submit Registration
+                      {t(
+                        'registration.submitRegistration',
+                        'Submit Registration'
+                      )}
                     </>
                   )}
                 </button>

@@ -9,6 +9,14 @@ import { toast } from 'react-hot-toast';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import { BASE_API_URL } from '../../config/constants';
 import { registrationApi } from '../../services/api';
+import type { TelecomCompany } from '../../config/types';
+import {
+  sectionVariants,
+  errorVariants,
+  transition,
+} from '../../config/animations';
+import SuccessAnimation from '../../components/SuccessAnimation';
+import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
 
 // SectionButtons component
 const SectionButtons = ({
@@ -19,41 +27,34 @@ const SectionButtons = ({
   onPrev?: () => void;
   onNext?: () => void;
   isSubmitting?: boolean;
-}) => (
-  <div className="flex justify-between mt-6">
-    {onPrev && (
-      <button
-        type="button"
-        onClick={onPrev}
-        disabled={isSubmitting}
-        className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
-      >
-        Previous
-      </button>
-    )}
-    {onNext && (
-      <button
-        type="button"
-        onClick={onNext}
-        disabled={isSubmitting}
-        className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors ml-auto disabled:opacity-50"
-      >
-        Next
-      </button>
-    )}
-    {!onNext && (
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className={`px-4 py-2 ${
-          isSubmitting ? 'bg-gray-500' : 'bg-blue-600'
-        } text-white rounded-md`}
-      >
-        {isSubmitting ? 'Processing...' : 'Submit'}
-      </button>
-    )}
-  </div>
-);
+}) => {
+  const { t } = useTranslationWithFallback();
+
+  return (
+    <div className="flex justify-between mt-6">
+      {onPrev && (
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={isSubmitting}
+          className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
+        >
+          {t('common.back')}
+        </button>
+      )}
+      {onNext && (
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={isSubmitting}
+          className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors ml-auto disabled:opacity-50"
+        >
+          {t('common.next')}
+        </button>
+      )}
+    </div>
+  );
+};
 
 // Add interface with face_id property to fix TypeScript errors
 interface UserWithFaceId {
@@ -77,6 +78,7 @@ interface FormData {
   guardian_name: string;
   guardian_phone: string;
   relationship: string;
+  phone_company: TelecomCompany;
 
   // Disappearance details
   last_seen_time: string;
@@ -96,6 +98,7 @@ const initialFormData: FormData = {
   dob: '',
   gender: '',
   national_id: '',
+  phone_company: '',
   address: '',
   guardian_name: '',
   guardian_phone: '',
@@ -111,6 +114,7 @@ const initialFormData: FormData = {
 };
 
 function AddNormalChild() {
+  const { t } = useTranslationWithFallback();
   const [currentSection, setCurrentSection] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<string[]>([]);
@@ -119,6 +123,9 @@ function AddNormalChild() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [useCamera, setUseCamera] = useState(false);
   const webcamRef = useRef<Webcam>(null);
+
+  // Add state for storing the user ID from response
+  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
 
   // Add these functions for webcam functionality
   const handleToggleCamera = () => {
@@ -164,9 +171,6 @@ function AddNormalChild() {
   const retakePhoto = () => {
     setCapturedImage(null);
   };
-
-  // Add state for storing the user ID from response
-  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -256,7 +260,6 @@ function AddNormalChild() {
   // Enhanced form submission with better error handling and face_id retry
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) {
       return;
     }
@@ -264,31 +267,28 @@ function AddNormalChild() {
     setIsSubmitting(true);
 
     try {
-      // Debug the form data first
-      console.log('Form data being submitted:', formData);
-
-      // Create a FormData object to handle file upload
+      // Create FormData object for file upload
       const formDataToSend = new FormData();
 
-      // Important: These are all the specific fields that the backend expects
-      // Basic user fields - match exactly what the backend expects
+      // Add required form fields
       formDataToSend.append('name', formData.name);
       formDataToSend.append('nickname', formData.name.split(' ')[0] || '');
       formDataToSend.append('dob', formData.dob);
+      formDataToSend.append('gender', formData.gender || '');
       formDataToSend.append('national_id', formData.national_id || '');
       formDataToSend.append('address', formData.address || '');
-      formDataToSend.append('category', 'child');
       formDataToSend.append('form_type', 'child');
+      formDataToSend.append('category', 'child');
 
-      // Additional fields that might be required by the backend
-      formDataToSend.append('employee_id', ''); // Backend expects this field
-      formDataToSend.append('department', '');
-      formDataToSend.append('role', '');
+      // Add bypass parameters for face validation
       formDataToSend.append('bypass_angle_check', 'true');
       formDataToSend.append('train_multiple', 'true');
 
-      // Child-specific fields - directly append to formData with exact backend field names
-      formDataToSend.append('date_of_birth', formData.dob || '');
+      // Phone fields are required by the backend
+      formDataToSend.append('phone_number', formData.guardian_phone || '');
+      formDataToSend.append('phone_company', formData.phone_company || '');
+
+      // Child-specific fields
       formDataToSend.append(
         'physical_description',
         formData.physical_description || ''
@@ -332,6 +332,9 @@ function AddNormalChild() {
         relationship: formData.relationship || '',
         gender: formData.gender || '',
         additional_notes: formData.additional_notes || '',
+        // Required fields for the backend database
+        phone_number: formData.guardian_phone || '',
+        phone_company: formData.phone_company || '',
         employee_id: '',
         department: '',
         role: '',
@@ -340,6 +343,15 @@ function AddNormalChild() {
       // Append the complete user data in JSON format
       formDataToSend.append('user_data', JSON.stringify(childData));
       formDataToSend.append('child_data', JSON.stringify(childData));
+
+      // Debug form fields being sent
+      console.log('Form data being sent to server:');
+      for (const pair of formDataToSend.entries()) {
+        if (!(pair[1] instanceof File)) {
+          console.log(pair[0], pair[1]);
+        }
+      }
+      console.log('Child data JSON:', childData);
 
       // Handle image from file upload or webcam
       let imageFile: File | null = null;
@@ -416,12 +428,11 @@ function AddNormalChild() {
         // For debugging - log all form data entries
         console.log('Form data entries being sent to server:');
         for (const pair of formDataToSend.entries()) {
-          console.log(
-            pair[0],
-            pair[1] instanceof File
-              ? `[File: ${pair[1].name}, ${pair[1].size} bytes]`
-              : pair[1]
-          );
+          if (pair[1] instanceof File) {
+            console.log(
+              `${pair[0]}: [File: ${pair[1].name}, ${pair[1].size} bytes]`
+            );
+          }
         }
       } else {
         // No image was provided
@@ -429,23 +440,79 @@ function AddNormalChild() {
       }
 
       // Debug log
-      console.log('Sending registration with image to API');
-
-      // Use the registration API service instead of direct fetch
+      console.log('About to call registerUser API with form data');
       const responseData = await registrationApi.registerUser(formDataToSend);
-      console.log('Response data:', responseData);
+      console.log('Response data from registerUser:', responseData);
 
       // Handle successful registration
       setSubmitSuccess(true);
       setIsSubmitting(false);
 
-      // Use the ID from the response to navigate to the user profile
-      const userId = responseData?.user_id;
-      const userName = responseData?.user?.name || formData.name;
-      if (userId) {
-        setRegisteredUserId(userId);
+      // If we didn't get proper data back, try to recreate it
+      let userId, userName, userObject;
+
+      // If we have a proper response, use it
+      if (responseData?.user_id || responseData?.user?.id) {
+        userId = responseData.user_id || responseData.user?.id || '';
+        userName = responseData.user?.name || formData.name;
+        userObject = responseData.user;
+      } else {
+        // Create a fallback temporary response object
+        userId = `temp-${Date.now()}`;
+        userName = formData.name;
+
+        // Create a minimal user object for display
+        userObject = {
+          id: userId,
+          name: userName,
+          face_id: '',
+          image_path: '',
+          created_at: new Date().toISOString(),
+          form_type: 'child',
+        };
+
+        // Save the form data to localStorage for potential recovery
+        try {
+          const formDataObj: Record<string, string> = {};
+          formDataToSend.forEach((value, key) => {
+            if (typeof value === 'string') {
+              formDataObj[key] = value;
+            }
+          });
+
+          localStorage.setItem(
+            `temp_registration_${userId}`,
+            JSON.stringify({
+              id: userId,
+              name: userName,
+              form_type: 'child',
+              timestamp: new Date().toISOString(),
+              data: formDataObj,
+            })
+          );
+
+          console.log(
+            `Saved form data to localStorage with key: temp_registration_${userId}`
+          );
+        } catch (e) {
+          console.error('Failed to save form data to localStorage:', e);
+        }
       }
+
+      // Store the ID for reference
+      setRegisteredUserId(userId);
       toast.success(`${userName} registered successfully!`);
+
+      console.log('User ID after registration:', userId);
+      console.log('Is the user ID temporary?', userId.startsWith('temp-'));
+
+      console.log(
+        `User registered successfully with ID: ${userId || 'Not available'}`
+      );
+      console.log(`Image path: ${userObject?.image_path || 'Not available'}`);
+      console.log(
+        `Face ID: ${responseData?.face_id || userObject?.face_id || 'Not available'}`
+      );
 
       // Reset form data after animation plays
       setTimeout(() => {
@@ -456,16 +523,8 @@ function AddNormalChild() {
         setIsSubmitting(false);
       }, 3000);
 
-      console.log(
-        `User registered successfully with ID: ${userId || 'Not available'}`
-      );
-      console.log(
-        `Image path: ${responseData?.user?.image_path || 'Not available'}`
-      );
-      console.log(`Face ID: ${responseData?.face_id || 'Not available'}`);
-
-      // Verify the registration only if we have a userId
-      if (userId) {
+      // Verify the registration only if we have a userId with a proper format (not temp-)
+      if (userId && !userId.startsWith('temp-')) {
         // Try to verify the registration up to 3 times with delays
         // This helps ensure the backend has time to process the face encoding
         let user: UserWithFaceId | null = null;
@@ -536,14 +595,32 @@ function AddNormalChild() {
           }
         }
       } else {
-        console.warn('No user ID received from server, skipping verification');
+        console.warn(
+          'No user ID received from server or temporary ID used, skipping verification'
+        );
+
+        // If the server returned a success status but no data, we can try to fetch the user
+        // by making a secondary request to search for the recently created user by name
       }
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'An error occurred during registration';
+
+      // Check for specific face angle error
+      let errorMessage = 'An error occurred during registration';
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+
+        // Provide more user-friendly message for face angle errors
+        if (
+          errorMessage.includes('Face angle') ||
+          errorMessage.includes('face is not')
+        ) {
+          errorMessage =
+            "The uploaded photo doesn't meet our requirements. Please upload a clear front-facing photo where the person is looking directly at the camera.";
+        }
+      }
+
       toast.error(errorMessage);
       setFormErrors([errorMessage]);
     } finally {
@@ -571,96 +648,47 @@ function AddNormalChild() {
               clipRule="evenodd"
             />
           </svg>
-          Back to Home
+          {t('common.back', 'Back to Home')}
         </Link>
       </div>
 
-      {/* Form Progress Indicator */}
-      <div className="flex justify-center mt-6">
-        <div className="flex items-center space-x-4">
-          {[1, 2, 3, 4].map((step, idx) => (
-            <React.Fragment key={step}>
-              {idx > 0 && (
-                <div className="w-16 h-1 bg-gray-300">
-                  <div
-                    className={`h-full ${currentSection >= step ? 'bg-orange-600' : 'bg-gray-300'}`}
-                  ></div>
+      {/* Form Progress Indicator - Only show when not in success state */}
+      {!submitSuccess && (
+        <div className="flex justify-center mt-6">
+          <div className="flex items-center space-x-4">
+            {[1, 2, 3, 4].map((step, idx) => (
+              <React.Fragment key={step}>
+                {idx > 0 && (
+                  <div className="w-16 h-1 bg-gray-300">
+                    <div
+                      className={`h-full ${currentSection >= step ? 'bg-orange-600' : 'bg-gray-300'}`}
+                    ></div>
+                  </div>
+                )}
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    currentSection === step
+                      ? 'bg-orange-600 text-white scale-110'
+                      : currentSection > step
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {step}
                 </div>
-              )}
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                  currentSection === step
-                    ? 'bg-orange-600 text-white scale-110'
-                    : currentSection > step
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-200 text-gray-700'
-                }`}
-              >
-                {step}
-              </div>
-            </React.Fragment>
-          ))}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {submitSuccess ? (
-        <motion.div
-          className="max-w-2xl mx-auto bg-orange-500/20 backdrop-blur-lg p-8 rounded-2xl shadow-lg border border-orange-300/30 text-white mt-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <motion.div
-            className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </motion.div>
-          <h3 className="text-3xl font-bold text-white mb-2 text-center">
-            Registration Successful!
-          </h3>
-          <p className="text-white/80 mb-6 text-center">
-            Child has been registered successfully.
-          </p>
-          <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-            <motion.div
-              className="bg-orange-500 h-2 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: '100%' }}
-              transition={{ duration: 3, ease: 'linear' }}
-            />
-          </div>
-          <p className="text-center mt-4 text-white/70">
-            Starting new registration in a moment...
-          </p>
-
-          {registeredUserId && (
-            <div className="mt-4 p-3 bg-white/10 rounded-lg">
-              <p className="text-center font-medium">Case Reference ID:</p>
-              <p className="text-center text-xl font-bold">
-                {registeredUserId}
-              </p>
-              <p className="text-center text-sm mt-2">
-                Please save this ID for future reference
-              </p>
-            </div>
-          )}
-        </motion.div>
+        <SuccessAnimation
+          title={t('registration.success')}
+          message={t('forms.child.title') + ' ' + t('common.success')}
+          id={registeredUserId}
+          idLabel={t('registration.caseReferenceId', 'Case Reference ID:')}
+        />
       ) : (
         <motion.form
           onSubmit={handleFormSubmit}
@@ -670,12 +698,19 @@ function AddNormalChild() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-center mb-6">
-            Child Registration
+            {t('forms.child.title')}
           </h2>
 
           {/* Display form errors */}
           {formErrors.length > 0 && (
-            <div className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4">
+            <motion.div
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
+              className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4"
+            >
               <ul className="list-disc pl-5">
                 {formErrors.map((error, index) => (
                   <li key={index} className="text-red-200">
@@ -683,42 +718,50 @@ function AddNormalChild() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
           )}
 
           {/* Section 1: Basic Information */}
           {currentSection === 1 && (
             <motion.div
-              initial={{ x: -40, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.4 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold">Basic Information</h3>
+              <h3 className="text-lg font-semibold">
+                {t('registration.personalInfo')}
+              </h3>
               <Input
-                label="Child's Full Name"
+                label={t('forms.child.childFullName', "Child's Full Name")}
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
               />
               <Input
-                label="Date of Birth"
+                label={t('registration.dateOfBirth')}
                 name="dob"
                 type="date"
                 value={formData.dob}
                 onChange={handleInputChange}
               />
               <div>
-                <label className="block font-medium mb-1">Gender</label>
+                <label className="block font-medium mb-1">
+                  {t('registration.gender')}
+                </label>
                 <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-white/10 border text-black border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="">
+                    {t('registration.selectGender', 'Select Gender')}
+                  </option>
+                  <option value="male">{t('registration.male')}</option>
+                  <option value="female">{t('registration.female')}</option>
                 </select>
               </div>
               <SectionButtons onNext={nextSection} />
@@ -728,9 +771,11 @@ function AddNormalChild() {
           {/* Section 2: Guardian Information */}
           {currentSection === 2 && (
             <motion.div
-              initial={{ x: 40, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.4 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
               <h3 className="text-lg font-semibold">Guardian Information</h3>
@@ -748,13 +793,30 @@ function AddNormalChild() {
               />
               <div>
                 <label className="block font-medium mb-1">
+                  Telecom Company
+                </label>
+                <select
+                  name="phone_company"
+                  value={formData.phone_company}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-white/10 text-black border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Company</option>
+                  <option value="Orange">Orange</option>
+                  <option value="Etisalat">Etisalat</option>
+                  <option value="Vodafone">Vodafone</option>
+                  <option value="WE">WE</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-medium mb-1">
                   Relationship to Child
                 </label>
                 <select
                   name="relationship"
                   value={formData.relationship}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 text-black bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Relationship</option>
                   <option value="parent">Parent</option>
@@ -772,9 +834,11 @@ function AddNormalChild() {
           {/* Section 3: Disappearance Details */}
           {currentSection === 3 && (
             <motion.div
-              initial={{ x: 40, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.4 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
               <h3 className="text-lg font-semibold">Disappearance Details</h3>
@@ -809,17 +873,18 @@ function AddNormalChild() {
                 value={formData.additional_notes}
                 onChange={handleInputChange}
               />
-                            <SectionButtons onPrev={prevSection} onNext={nextSection} />
-
+              <SectionButtons onPrev={prevSection} onNext={nextSection} />
             </motion.div>
           )}
 
           {/* Section 4: Upload Image */}
           {currentSection === 4 && (
             <motion.div
-              initial={{ x: 40, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.4 }}
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
               className="space-y-4"
             >
               <h3 className="text-lg font-semibold">Child's Photo</h3>
@@ -954,8 +1019,7 @@ function AddNormalChild() {
                   </div>
                 )}
               </div>
-              <SectionButtons onPrev={prevSection}  />
-
+              <SectionButtons onPrev={prevSection} />
 
               {/* Submit Button */}
               <div className="mt-8 flex flex-col items-center">

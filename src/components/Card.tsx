@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslationWithFallback } from '../hooks/useTranslationWithFallback';
 
 // Define the User type for props
 interface User {
@@ -24,6 +25,8 @@ interface CardProps {
 }
 
 const Card: React.FC<CardProps> = ({ user }) => {
+  const { t, isRTL } = useTranslationWithFallback();
+
   const getImageUrl = () => {
     if (user.image_path) {
       // Check if image_path already contains the full URL
@@ -47,7 +50,10 @@ const Card: React.FC<CardProps> = ({ user }) => {
   };
 
   return (
-    <div className="bg-white/20 backdrop-blur-md shadow-lg rounded-lg p-6 flex flex-col items-center space-y-4 w-full border border-white/30 hover:shadow-xl transition-all duration-300 hover:bg-white/30 ">
+    <div
+      className="bg-white/20 backdrop-blur-md shadow-lg rounded-lg p-6 flex flex-col items-center space-y-4 w-full border border-white/30 hover:shadow-xl transition-all duration-300 hover:bg-white/30"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/30">
         <img
           src={getImageUrl()}
@@ -69,20 +75,28 @@ const Card: React.FC<CardProps> = ({ user }) => {
 
       <div className="w-full space-y-2">
         <div className="flex justify-between items-center">
-          <p className="text-white/70">Phone:</p>
-          <p className="font-bold text-white">{user.phone_number || 'N/A'}</p>
+          <p className="text-white/70">
+            {t('registration.phoneNumber', 'Phone:')}
+          </p>
+          <p className="font-bold text-white">
+            {user.phone_number || t('users.notAvailable', 'N/A')}
+          </p>
         </div>
 
         <div className="flex justify-between items-center">
-          <p className="text-white/70">ID:</p>
+          <p className="text-white/70">{t('users.id', 'ID:')}</p>
           <p className="font-bold text-white">
-            {user.national_id || user.national_id || 'N/A'}
+            {user.national_id ||
+              user.national_id ||
+              t('users.notAvailable', 'N/A')}
           </p>
         </div>
 
         {user.address && (
           <div className="flex justify-between items-center">
-            <p className="text-white/70">Address:</p>
+            <p className="text-white/70">
+              {t('registration.address', 'Address:')}
+            </p>
             <p className="font-bold text-white text-right">{user.address}</p>
           </div>
         )}
@@ -92,7 +106,7 @@ const Card: React.FC<CardProps> = ({ user }) => {
         to={`/users/${user.id}`}
         className="w-full mt-4 py-2 text-center bg-blue-600/70 hover:bg-blue-700 text-white rounded-lg transition-colors duration-300"
       >
-        View Details
+        {t('common.view', 'View Details')}
       </Link>
     </div>
   );

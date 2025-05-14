@@ -1,0 +1,86 @@
+/* RTL support for Arabic language */
+html[dir='rtl'] {
+  /* Text alignment */
+  text-align: right;
+
+  /* Flip icons and directions */
+  .flip-in-rtl {
+    transform: scaleX(-1);
+  }
+
+  /* Adjust input fields */
+  input,
+  textarea,
+  select {
+    text-align: right;
+    direction: rtl;
+  }
+
+  /* Adjust form layouts */
+  .flex-row {
+    flex-direction: row-reverse;
+  }
+
+  /* Adjust margins and paddings in RTL mode */
+  .ml-auto {
+    margin-right: auto !important;
+    margin-left: 0 !important;
+  }
+
+  .mr-2 {
+    margin-left: 0.5rem !important;
+    margin-right: 0 !important;
+  }
+
+  .mr-3 {
+    margin-left: 0.75rem !important;
+    margin-right: 0 !important;
+  }
+
+  .mr-4 {
+    margin-left: 1rem !important;
+    margin-right: 0 !important;
+  }
+
+  .ml-2 {
+    margin-right: 0.5rem !important;
+    margin-left: 0 !important;
+  }
+
+  .ml-3 {
+    margin-right: 0.75rem !important;
+    margin-left: 0 !important;
+  }
+
+  .ml-4 {
+    margin-right: 1rem !important;
+    margin-left: 0 !important;
+  }
+
+  /* Adjust text alignment in tables */
+  th,
+  td {
+    text-align: right;
+  }
+
+  /* Adjust button icons */
+  button svg:first-child {
+    margin-right: 0;
+    margin-left: 0.5rem;
+  }
+
+  /* Handle border radius in RTL */
+  .rounded-l-md {
+    border-radius: 0 0.375rem 0.375rem 0 !important;
+  }
+
+  .rounded-r-md {
+    border-radius: 0.375rem 0 0 0.375rem !important;
+  }
+
+  /* Handle RTL padding */
+  .pl-5 {
+    padding-right: 1.25rem !important;
+    padding-left: 0 !important;
+  }
+}

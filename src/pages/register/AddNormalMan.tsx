@@ -9,12 +9,13 @@ import { toast } from 'react-hot-toast';
 import SectionButtons from '../../components/SectionButtons';
 import {
   sectionVariants,
-  successVariants,
   errorVariants,
   transition,
 } from '../../config/animations';
 import type { TelecomCompany } from '../../config/types';
 import { registrationApi } from '../../services/api';
+import SuccessAnimation from '../../components/SuccessAnimation';
+import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
 
 interface FormData {
   // Common fields for all forms
@@ -105,6 +106,8 @@ const AddNormalMan = () => {
   const webcamRef = useRef<Webcam>(null);
   const [loading, setLoading] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
+  const { t } = useTranslationWithFallback();
 
   const validateForm = () => {
     const errors: string[] = [];
@@ -113,100 +116,159 @@ const AddNormalMan = () => {
     if (currentSection === 1) {
       // Personal Info validation
       if (!formData.name.trim()) {
-        errors.push('Name is required');
+        errors.push(t('validation.nameRequired', 'Name is required'));
       } else if (formData.name.length < 2) {
-        errors.push('Name must be at least 2 characters long');
+        errors.push(
+          t('validation.nameLength', 'Name must be at least 2 characters long')
+        );
       }
 
       if (!formData.dob) {
-        errors.push('Date of Birth is required');
+        errors.push(t('validation.dobRequired', 'Date of Birth is required'));
       } else {
         const dob = new Date(formData.dob);
         const today = new Date();
         const age = today.getFullYear() - dob.getFullYear();
         if (age < 18) {
-          errors.push('Must be at least 18 years old');
+          errors.push(
+            t('validation.ageMinimum', 'Must be at least 18 years old')
+          );
         }
         if (dob > today) {
-          errors.push('Date of Birth cannot be in the future');
+          errors.push(
+            t('validation.dobFuture', 'Date of Birth cannot be in the future')
+          );
         }
       }
 
       if (!formData.national_id.trim()) {
-        errors.push('National ID is required');
+        errors.push(
+          t('validation.nationalIdRequired', 'National ID is required')
+        );
       } else if (!/^\d{10}$/.test(formData.national_id)) {
-        errors.push('National ID must be 10 digits');
+        errors.push(
+          t('validation.nationalIdDigits', 'National ID must be 10 digits')
+        );
       }
 
       if (!formData.category.trim()) {
-        errors.push('Category is required');
+        errors.push(t('validation.categoryRequired', 'Category is required'));
       }
     } else if (currentSection === 2) {
       // Contact Info validation
       if (!formData.phone_number.trim()) {
-        errors.push('Phone Number is required');
+        errors.push(t('validation.phoneRequired', 'Phone Number is required'));
       } else if (!/^\d{10}$/.test(formData.phone_number)) {
-        errors.push('Phone Number must be 10 digits');
+        errors.push(
+          t('validation.phoneDigits', 'Phone Number must be 10 digits')
+        );
       }
 
       if (!formData.phone_company) {
-        errors.push('Telecom Company is required');
+        errors.push(
+          t('validation.phoneCompanyRequired', 'Telecom Company is required')
+        );
       }
 
       if (
         formData.second_phone_number &&
         !/^\d{10}$/.test(formData.second_phone_number)
       ) {
-        errors.push('Second Phone Number must be 10 digits');
+        errors.push(
+          t(
+            'validation.secondPhoneDigits',
+            'Second Phone Number must be 10 digits'
+          )
+        );
       }
     } else if (currentSection === 3) {
       // Criminal record validation
       if (formData.has_criminal_record) {
         if (!formData.case_details.trim()) {
-          errors.push('Case Details are required when criminal record exists');
+          errors.push(
+            t(
+              'validation.caseDetailsRequired',
+              'Case Details are required when criminal record exists'
+            )
+          );
         }
         if (!formData.police_station.trim()) {
-          errors.push('Police Station is required when criminal record exists');
+          errors.push(
+            t(
+              'validation.policeStationRequired',
+              'Police Station is required when criminal record exists'
+            )
+          );
         }
         if (!formData.case_number.trim()) {
-          errors.push('Case Number is required when criminal record exists');
+          errors.push(
+            t(
+              'validation.caseNumberRequired',
+              'Case Number is required when criminal record exists'
+            )
+          );
         }
       }
     } else if (currentSection === 4) {
       // Vehicle info validation
       if (formData.has_motorcycle) {
         if (!formData.license_plate.trim()) {
-          errors.push('License Plate is required for motorcycle');
+          errors.push(
+            t(
+              'validation.licensePlateRequired',
+              'License Plate is required for motorcycle'
+            )
+          );
         }
         if (!formData.vehicle_model.trim()) {
-          errors.push('Vehicle Model is required for motorcycle');
+          errors.push(
+            t(
+              'validation.vehicleModelRequired',
+              'Vehicle Model is required for motorcycle'
+            )
+          );
         }
         if (!formData.license_expiration) {
-          errors.push('License Expiration Date is required for motorcycle');
+          errors.push(
+            t(
+              'validation.licenseExpirationRequired',
+              'License Expiration Date is required for motorcycle'
+            )
+          );
         } else {
           const expDate = new Date(formData.license_expiration);
           const today = new Date();
           if (expDate < today) {
-            errors.push('License has expired');
+            errors.push(t('validation.licenseExpired', 'License has expired'));
           }
         }
       }
     } else if (currentSection === 5) {
       // Image validation
       if (!formData.image && !capturedImage) {
-        errors.push('Photo is required');
+        errors.push(t('validation.photoRequired', 'Photo is required'));
       } else {
         const imageToCheck = formData.image || capturedImage;
         if (imageToCheck instanceof File) {
           if (imageToCheck.size > 5 * 1024 * 1024) {
-            errors.push('Image size should be less than 5MB');
+            errors.push(
+              t(
+                'validation.imageSizeLimit',
+                'Image size should be less than 5MB'
+              )
+            );
           }
           if (
             !['image/jpeg', 'image/png', 'image/jpg'].includes(
               imageToCheck.type
             )
           ) {
-            errors.push('Please upload a valid image file (JPEG, PNG)');
+            errors.push(
+              t(
+                'validation.imageTypeInvalid',
+                'Please upload a valid image file (JPEG, PNG)'
+              )
+            );
           }
         }
       }
@@ -289,13 +351,17 @@ const AddNormalMan = () => {
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      setFormErrors(['Image size should be less than 5MB']);
+      setFormErrors([
+        t('validation.imageSizeLimit', 'Image size should be less than 5MB'),
+      ]);
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setFormErrors(['Please upload a valid image file']);
+      setFormErrors([
+        t('validation.imageTypeInvalid', 'Please upload a valid image file'),
+      ]);
       return;
     }
 
@@ -311,10 +377,14 @@ const AddNormalMan = () => {
     } catch (error) {
       console.error('Image processing error:', error);
       setFormErrors([
-        error instanceof Error ? error.message : 'Failed to process image',
+        error instanceof Error
+          ? error.message
+          : t('common.generalError', 'Failed to process image'),
       ]);
       toast.error(
-        error instanceof Error ? error.message : 'Failed to process image'
+        error instanceof Error
+          ? error.message
+          : t('common.generalError', 'Failed to process image')
       );
     }
   };
@@ -416,15 +486,22 @@ const AddNormalMan = () => {
         });
         formDataToSend.append('file', file);
       } else {
-        throw new Error('Please provide an image');
+        throw new Error(
+          t('validation.photoRequired', 'Please provide an image')
+        );
       }
 
       const responseData = await registrationApi.registerUser(formDataToSend);
 
       // Handle successful registration
       setSubmitSuccess(true);
+      setRegisteredUserId(
+        responseData?.user_id || responseData?.user?.id || null
+      );
       const userName = responseData?.user?.name || formData.name;
-      toast.success(`${userName} registered successfully!`);
+      toast.success(
+        t('registration.successMessage', `${userName} registered successfully!`)
+      );
 
       // Reset form data after animation plays
       setTimeout(() => {
@@ -440,7 +517,10 @@ const AddNormalMan = () => {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : 'An error occurred during registration';
+          : t(
+              'registration.generalError',
+              'An error occurred during registration'
+            );
       toast.error(errorMessage);
       setFormErrors([errorMessage]);
     } finally {
@@ -461,57 +541,6 @@ const AddNormalMan = () => {
     setCapturedImage(null);
   };
 
-  // Success animation component
-  const SuccessAnimation = () => (
-    <motion.div
-      variants={successVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      transition={transition}
-      className="max-w-2xl mx-auto bg-green-500/20 backdrop-blur-lg p-8 rounded-2xl shadow-lg border border-green-300/30 text-white"
-    >
-      <motion.div
-        className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-10 w-10 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={3}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      </motion.div>
-      <h3 className="text-3xl font-bold text-white mb-2 text-center">
-        Registration Successful!
-      </h3>
-      <p className="text-white/80 mb-6 text-center">
-        User has been registered successfully.
-      </p>
-      <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-        <motion.div
-          className="bg-green-500 h-2 rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: '100%' }}
-          transition={{ duration: 3, ease: 'linear' }}
-        />
-      </div>
-      <p className="text-center mt-4 text-white/70">
-        Starting new registration in a moment...
-      </p>
-    </motion.div>
-  );
-
   return (
     <div className="p-6">
       <Link
@@ -530,7 +559,7 @@ const AddNormalMan = () => {
             clipRule="evenodd"
           />
         </svg>
-        Back to Home
+        {t('common.back', 'Back to Home')}
       </Link>
 
       {/* Form Progress Indicator - Hide when showing success */}
@@ -563,43 +592,50 @@ const AddNormalMan = () => {
         </div>
       )}
 
-      <motion.form
-        onSubmit={handleFormSubmit}
-        className="max-w-2xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(0,0,255,0.3)] text-white border border-white/30 space-y-8"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h2 className="text-2xl font-bold text-center mb-6">
-          Male Registration
-        </h2>
+      {submitSuccess ? (
+        <SuccessAnimation
+          title={t('registration.success', 'Registration Successful!')}
+          message={t(
+            'registration.successDescription',
+            'User has been registered successfully.'
+          )}
+          id={registeredUserId}
+          idLabel={t('registration.caseReferenceId', 'Registration ID:')}
+        />
+      ) : (
+        <motion.form
+          onSubmit={handleFormSubmit}
+          className="max-w-2xl mx-auto bg-white/20 backdrop-blur-lg p-10 mt-6 rounded-2xl shadow-[0_0_30px_5px_rgba(0,0,255,0.3)] text-white border border-white/30 space-y-8"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h2 className="text-2xl font-bold text-center mb-6">
+            {t('forms.man.title', 'Male Registration')}
+          </h2>
 
-        {/* Display form errors */}
-        {formErrors.length > 0 && (
-          <motion.div
-            variants={errorVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            transition={transition}
-            className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4"
-          >
-            <ul className="list-disc pl-5">
-              {formErrors.map((error, index) => (
-                <li key={index} className="text-red-200">
-                  {error}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
+          {/* Display form errors */}
+          {formErrors.length > 0 && (
+            <motion.div
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transition}
+              className="bg-red-500/20 p-3 rounded-lg border border-red-500/30 mb-4"
+            >
+              <ul className="list-disc pl-5">
+                {formErrors.map((error, index) => (
+                  <li key={index} className="text-red-200">
+                    {error}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
 
-        {/* Success message */}
-        {submitSuccess ? (
-          <SuccessAnimation />
-        ) : (
+          {/* Sections */}
           <>
-            {/* Sections */}
             {currentSection === 1 && (
               <motion.div
                 initial={{ x: -30, opacity: 0 }}
@@ -607,38 +643,38 @@ const AddNormalMan = () => {
                 className="space-y-4"
               >
                 <Input
-                  label="Name"
+                  label={t('registration.fullName', 'Name')}
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Nickname"
+                  label={t('registration.nickname', 'Nickname')}
                   name="nickname"
                   value={formData.nickname}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Date of Birth"
+                  label={t('registration.dateOfBirth', 'Date of Birth')}
                   name="dob"
                   type="date"
                   value={formData.dob}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="National ID"
+                  label={t('registration.nationalId', 'National ID')}
                   name="national_id"
                   value={formData.national_id}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Address"
+                  label={t('registration.address', 'Address')}
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Job"
+                  label={t('registration.job', 'Job')}
                   name="job"
                   value={formData.job}
                   onChange={handleInputChange}
@@ -656,24 +692,28 @@ const AddNormalMan = () => {
                 transition={transition}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-semibold">Contact Information</h3>
+                <h3 className="text-lg font-semibold">
+                  {t('registration.contactInfo', 'Contact Information')}
+                </h3>
                 <Input
-                  label="Phone Number"
+                  label={t('registration.phoneNumber', 'Phone Number')}
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleInputChange}
                 />
                 <div>
                   <label className="block font-medium mb-1">
-                    Telecom Company
+                    {t('registration.phoneCompany', 'Telecom Company')}
                   </label>
                   <select
                     name="phone_company"
                     value={formData.phone_company}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-black/30 border border-black/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-white/10 text-black border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Select Company</option>
+                    <option value="">
+                      {t('common.select', 'Select Company')}
+                    </option>
                     <option value="Orange">Orange</option>
                     <option value="Etisalat">Etisalat</option>
                     <option value="Vodafone">Vodafone</option>
@@ -681,7 +721,10 @@ const AddNormalMan = () => {
                   </select>
                 </div>
                 <Input
-                  label="Secondary Phone (Optional)"
+                  label={t(
+                    'registration.secondaryPhone',
+                    'Secondary Phone (Optional)'
+                  )}
                   name="second_phone_number"
                   value={formData.second_phone_number || ''}
                   onChange={handleInputChange}
@@ -703,36 +746,38 @@ const AddNormalMan = () => {
                     onChange={handleToggleCriminalRecord}
                     className="h-5 w-5"
                   />
-                  <label>Has Criminal Record</label>
+                  <label>
+                    {t('registration.hasCriminalRecord', 'Has Criminal Record')}
+                  </label>
                 </div>
                 {formData.has_criminal_record && (
                   <>
                     <Input
-                      label="Case Details"
+                      label={t('registration.caseDetails', 'Case Details')}
                       name="case_details"
                       value={formData.case_details}
                       onChange={handleInputChange}
                     />
                     <Input
-                      label="Police Station"
+                      label={t('registration.policeStation', 'Police Station')}
                       name="police_station"
                       value={formData.police_station}
                       onChange={handleInputChange}
                     />
                     <Input
-                      label="Case Number"
+                      label={t('registration.caseNumber', 'Case Number')}
                       name="case_number"
                       value={formData.case_number}
                       onChange={handleInputChange}
                     />
                     <Input
-                      label="Judgment"
+                      label={t('registration.judgment', 'Judgment')}
                       name="judgment"
                       value={formData.judgment}
                       onChange={handleInputChange}
                     />
                     <Input
-                      label="Accusation"
+                      label={t('registration.accusation', 'Accusation')}
                       name="accusation"
                       value={formData.accusation}
                       onChange={handleInputChange}
@@ -750,42 +795,45 @@ const AddNormalMan = () => {
                 className="space-y-4"
               >
                 <h3 className="text-lg font-semibold text-white mb-4">
-                  Travel Information
+                  {t('registration.travelInfo', 'Travel Information')}
                 </h3>
                 <Input
-                  label="Travel Date"
+                  label={t('registration.travelDate', 'Travel Date')}
                   name="travel_date"
                   type="date"
                   value={formData.travel_date}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Travel Destination"
+                  label={t(
+                    'registration.travelDestination',
+                    'Travel Destination'
+                  )}
                   name="travel_destination"
                   value={formData.travel_destination}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Arrival Airport"
+                  label={t('registration.arrivalAirport', 'Arrival Airport')}
                   name="arrival_airport"
                   value={formData.arrival_airport}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Arrival Date"
+                  label={t('registration.arrivalDate', 'Arrival Date')}
                   name="arrival_date"
                   type="date"
                   value={formData.arrival_date}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Flight Number"
+                  label={t('registration.flightNumber', 'Flight Number')}
                   name="flight_number"
                   value={formData.flight_number}
                   onChange={handleInputChange}
                 />
                 <Input
-                  label="Return Date"
+                  label={t('registration.returnDate', 'Return Date')}
                   name="return_date"
                   type="date"
                   value={formData.return_date}
@@ -809,8 +857,8 @@ const AddNormalMan = () => {
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                   >
                     {formData.useCamera
-                      ? 'Switch to Upload'
-                      : 'Switch to Capture'}
+                      ? t('registration.switchToUpload', 'Switch to Upload')
+                      : t('registration.switchToCapture', 'Switch to Capture')}
                   </button>
                   <div>
                     {formData.useCamera ? (
@@ -825,7 +873,7 @@ const AddNormalMan = () => {
                 {!formData.useCamera ? (
                   <div className="flex flex-col items-center">
                     <label className="block text-white font-semibold mb-2">
-                      Upload Image
+                      {t('registration.uploadImage', 'Upload Image')}
                     </label>
                     <div
                       className="cursor-pointer"
@@ -833,7 +881,13 @@ const AddNormalMan = () => {
                         document.getElementById('fileInput')?.click()
                       }
                     >
-                      <AnimatedFaceIcon size="md" text="Click to upload" />
+                      <AnimatedFaceIcon
+                        size="md"
+                        text={t(
+                          'registration.clickToUpload',
+                          'Click to upload'
+                        )}
+                      />
                     </div>
                     <input
                       id="fileInput"
@@ -887,7 +941,8 @@ const AddNormalMan = () => {
                           className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto"
                           onClick={captureImage}
                         >
-                          <FaCamera className="mr-2" /> Capture Photo
+                          <FaCamera className="mr-2" />{' '}
+                          {t('registration.capturePhoto', 'Capture Photo')}
                         </button>
                       </>
                     ) : (
@@ -913,7 +968,8 @@ const AddNormalMan = () => {
                           className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
                           onClick={retakePhoto}
                         >
-                          <FaRedo className="mr-2" /> Retake Photo
+                          <FaRedo className="mr-2" />{' '}
+                          {t('registration.retakePhoto', 'Retake Photo')}
                         </button>
                       </>
                     )}
@@ -958,13 +1014,16 @@ const AddNormalMan = () => {
                         </svg>
                       </div>
                       <p className="text-white font-medium">
-                        Registration Submitted Successfully!
+                        {t(
+                          'registration.submittedSuccess',
+                          'Registration Submitted Successfully!'
+                        )}
                       </p>
                       <Link
                         to="/home"
                         className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        Return to Home
+                        {t('common.returnToHome', 'Return to Home')}
                       </Link>
                     </motion.div>
                   ) : (
@@ -1015,7 +1074,7 @@ const AddNormalMan = () => {
                               d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                           </svg>
-                          Processing...
+                          {t('common.loading', 'Processing...')}
                         </div>
                       ) : (
                         <>
@@ -1033,7 +1092,10 @@ const AddNormalMan = () => {
                               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                             />
                           </svg>
-                          Submit Registration
+                          {t(
+                            'registration.submitRegistration',
+                            'Submit Registration'
+                          )}
                         </>
                       )}
                     </button>
@@ -1042,8 +1104,8 @@ const AddNormalMan = () => {
               </motion.div>
             )}
           </>
-        )}
-      </motion.form>
+        </motion.form>
+      )}
     </div>
   );
 };
