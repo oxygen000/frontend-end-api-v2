@@ -155,7 +155,10 @@
     "userPlural": "مستخدمين",
     "noResults": "لم يتم العثور على نتائج",
     "tryDifferent": "جرب مصطلح بحث مختلف أو اضبط المرشحات",
-    "userDetails": "تفاصيل المستخدم"
+    "userDetails": "تفاصيل المستخدم",
+    "refreshing": "جاري تحديث البيانات...",
+    "refreshingText": "جاري التحديث...",
+    "retrying": "جاري إعادة المحاولة..."
   },
   "identification": {
     "title": "التعرف على الوجه",
@@ -195,12 +198,18 @@
     "submitRegistration": "إرسال التسجيل",
     "clickToUpload": "انقر للتحميل",
     "switchToUpload": "التبديل إلى التحميل",
-    "switchToCamera": "التبديل إلى الكاميرا"
+    "switchToCamera": "التبديل إلى الكاميرا",
+    "switchToCapture": "التبديل إلى الالتقاط",
+    "uploadImage": "تحميل صورة",
+    "submitting": "جاري الإرسال...",
+    "successMessage": "تم التسجيل بنجاح!",
+    "successDescription": "تم تسجيل الشخص في النظام ويمكن التعرف عليه الآن."
   },
   "forms": {
     "child": {
       "title": "نموذج تسجيل الطفل",
-      "childFullName": "الاسم الكامل للطفل"
+      "childFullName": "الاسم الكامل للطفل",
+      "childId": "الرقم التعريفي للطفل (اختياري)"
     },
     "disabled": {
       "title": "تسجيل شخص مرافق",

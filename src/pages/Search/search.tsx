@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import Card from '../../components/Card';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,8 +19,12 @@ import {
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
+import { toast } from 'react-hot-toast';
 
 const API_URL = 'https://backend-fast-api-ai.fly.dev/api/users';
+
+// Define a smaller initial page size to improve first render time
+const PAGE_SIZE = 20;
 
 interface User {
   id: string;
@@ -90,8 +94,9 @@ const Search: React.FC = () => {
   const { t } = useTranslationWithFallback();
   const [data, setData] = useState<ApiUser[]>([]);
   const [filteredData, setFilteredData] = useState<ApiUser[]>([]);
+  const [displayedData, setDisplayedData] = useState<ApiUser[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Add debounced search term
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('grid');
@@ -106,18 +111,48 @@ const Search: React.FC = () => {
   });
   const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const fetchData = useCallback(async (retryCount = 0, maxRetries = 3) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Use the all users endpoint instead
+      // Use a cached response if available
+      const cachedData = sessionStorage.getItem('searchData');
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData);
+        setData(parsedData);
+        setFilteredData(parsedData);
+        setLoading(false);
+
+        // Load more data in the background
+        fetchFromAPI(retryCount, maxRetries).catch(console.error);
+        return;
+      }
+
+      await fetchFromAPI(retryCount, maxRetries);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to load users. Please try again later.');
+      setData([]);
+      setFilteredData([]);
+      setLoading(false);
+    }
+  }, []);
+
+  // Separate function to fetch from API
+  const fetchFromAPI = async (retryCount = 0, maxRetries = 3) => {
+    try {
       const response = await axios.get(API_URL);
 
       if (response.data && Array.isArray(response.data)) {
         setData(response.data);
         setFilteredData(response.data);
+        // Cache the response for future use
+        sessionStorage.setItem('searchData', JSON.stringify(response.data));
       } else if (
         response.data &&
         response.data.users &&
@@ -125,13 +160,18 @@ const Search: React.FC = () => {
       ) {
         setData(response.data.users);
         setFilteredData(response.data.users);
+        // Cache the response for future use
+        sessionStorage.setItem(
+          'searchData',
+          JSON.stringify(response.data.users)
+        );
       } else {
         setError('Invalid response format from server');
         setData([]);
         setFilteredData([]);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching from API:', error);
 
       // If the all users endpoint fails, try the regular endpoint as fallback
       if (retryCount === 0) {
@@ -140,6 +180,11 @@ const Search: React.FC = () => {
           if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
             setData(fallbackResponse.data);
             setFilteredData(fallbackResponse.data);
+            // Cache the response for future use
+            sessionStorage.setItem(
+              'searchData',
+              JSON.stringify(fallbackResponse.data)
+            );
             setLoading(false);
             return;
           } else if (
@@ -149,6 +194,11 @@ const Search: React.FC = () => {
           ) {
             setData(fallbackResponse.data.users);
             setFilteredData(fallbackResponse.data.users);
+            // Cache the response for future use
+            sessionStorage.setItem(
+              'searchData',
+              JSON.stringify(fallbackResponse.data.users)
+            );
             setLoading(false);
             return;
           }
@@ -162,56 +212,70 @@ const Search: React.FC = () => {
         console.log(`Retrying fetchData (${retryCount + 1}/${maxRetries})...`);
         setTimeout(
           () => {
-            fetchData(retryCount + 1, maxRetries);
+            fetchFromAPI(retryCount + 1, maxRetries);
           },
           1000 * (retryCount + 1)
         ); // Exponential backoff
         return;
       }
 
-      setError('Failed to load users. Please try again later.');
-      setData([]);
-      setFilteredData([]);
+      throw error;
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const getImageUrl = (
-    imagePath: string | null | undefined,
-    userName: string
-  ) => {
-    if (!imagePath) {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
-    }
-
-    // Check if image_path already contains the full URL
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-
-    // If image_path doesn't contain 'uploads/' prefix, add it
-    const formattedPath = imagePath.includes('uploads/')
-      ? imagePath
-      : `uploads/${imagePath}`;
-
-    return `https://backend-fast-api-ai.fly.dev/${formattedPath.replace(/^\//, '')}`;
   };
+
+  // Use useMemo to create getImageUrl function to prevent recreating on every render
+  const getImageUrl = useMemo(() => {
+    return (imagePath: string | null | undefined, userName: string) => {
+      if (!imagePath) {
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
+      }
+
+      // Check if image_path already contains the full URL
+      if (imagePath.startsWith('http')) {
+        return imagePath;
+      }
+
+      // If image_path doesn't contain 'uploads/' prefix, add it
+      const formattedPath = imagePath.includes('uploads/')
+        ? imagePath
+        : `uploads/${imagePath}`;
+
+      return `https://backend-fast-api-ai.fly.dev/${formattedPath.replace(/^\//, '')}`;
+    };
+  }, []);
 
   useEffect(() => {
     fetchData(0, 3);
   }, [fetchData]);
 
+  // Optimized filter function
   const applyFilters = useCallback(() => {
     if (!Array.isArray(data)) {
       setFilteredData([]);
       return;
     }
 
-    const term = debouncedSearchTerm.toLowerCase(); // Use debounced search term
+    const term = debouncedSearchTerm.toLowerCase();
 
-    let filtered = data.filter((user) => {
-      // Improved search logic - searchable fields in a single array for cleaner code
+    // Use optimized filtering with early returns for better performance
+    const filtered = data.filter((user) => {
+      // Quick check for empty term to skip unnecessary processing
+      if (term === '') {
+        // Only check filters if search term is empty
+        return (
+          (!filters.hasPhone ||
+            (!!user.phone_number && user.phone_number.trim() !== '')) &&
+          (!filters.hasNationalId ||
+            (!!user.national_id && user.national_id.trim() !== '') ||
+            (!!user.employee_id && user.employee_id.trim() !== '')) &&
+          (!filters.category || user.category === filters.category) &&
+          (!filters.formType || user.form_type === filters.formType)
+        );
+      }
+
+      // Searchable fields in a single array for cleaner code
       const searchableFields = [
         user.name,
         user.phone_number,
@@ -223,43 +287,28 @@ const Search: React.FC = () => {
         user.form_type,
       ];
 
-      const matchesSearch =
-        term === '' ||
-        searchableFields.some(
-          (field) => field && field.toLowerCase().includes(term)
-        );
+      // Check if any searchable field contains the search term
+      const matchesSearch = searchableFields.some(
+        (field) => field && field.toLowerCase().includes(term)
+      );
 
-      // Phone filter
-      const matchesPhoneFilter =
-        !filters.hasPhone ||
-        (!!user.phone_number && user.phone_number.trim() !== '');
+      if (!matchesSearch) return false;
 
-      // National ID filter
-      const matchesNationalIdFilter =
-        !filters.hasNationalId ||
-        (!!user.national_id && user.national_id.trim() !== '') ||
-        (!!user.employee_id && user.employee_id.trim() !== '');
-
-      // Category filter
-      const matchesCategory =
-        !filters.category || user.category === filters.category;
-
-      // Form type filter
-      const matchesFormType =
-        !filters.formType || user.form_type === filters.formType;
-
+      // If search term matches, check filters
       return (
-        matchesSearch &&
-        matchesPhoneFilter &&
-        matchesNationalIdFilter &&
-        matchesCategory &&
-        matchesFormType
+        (!filters.hasPhone ||
+          (!!user.phone_number && user.phone_number.trim() !== '')) &&
+        (!filters.hasNationalId ||
+          (!!user.national_id && user.national_id.trim() !== '') ||
+          (!!user.employee_id && user.employee_id.trim() !== '')) &&
+        (!filters.category || user.category === filters.category) &&
+        (!filters.formType || user.form_type === filters.formType)
       );
     });
 
-    // Apply sorting - fixed case statements
+    // Apply sorting - only if needed
     if (sortField !== 'none') {
-      filtered = [...filtered].sort((a, b) => {
+      filtered.sort((a, b) => {
         let comparison = 0;
 
         switch (sortField) {
@@ -282,6 +331,10 @@ const Search: React.FC = () => {
     }
 
     setFilteredData(filtered);
+    // Reset pagination when filters change
+    setPage(1);
+    setHasMore(filtered.length > PAGE_SIZE);
+    setDisplayedData(filtered.slice(0, PAGE_SIZE));
   }, [data, debouncedSearchTerm, filters, sortField, sortDirection]);
 
   useEffect(() => {
@@ -296,6 +349,48 @@ const Search: React.FC = () => {
     sortDirection,
     applyFilters,
   ]);
+
+  // Handle pagination
+  const loadMoreItems = useCallback(() => {
+    if (!hasMore) return;
+
+    const nextPage = page + 1;
+    const startIndex = (nextPage - 1) * PAGE_SIZE;
+    const endIndex = nextPage * PAGE_SIZE;
+
+    if (startIndex >= filteredData.length) {
+      setHasMore(false);
+      return;
+    }
+
+    const nextItems = filteredData.slice(startIndex, endIndex);
+    setDisplayedData((prev) => [...prev, ...nextItems]);
+    setPage(nextPage);
+    setHasMore(endIndex < filteredData.length);
+  }, [page, filteredData, hasMore]);
+
+  useEffect(() => {
+    // Implement intersection observer for infinite scroll
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMoreItems();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
+    if (loadMoreTrigger) {
+      observer.observe(loadMoreTrigger);
+    }
+
+    return () => {
+      if (loadMoreTrigger) {
+        observer.unobserve(loadMoreTrigger);
+      }
+    };
+  }, [hasMore, loading, loadMoreItems]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -343,7 +438,26 @@ const Search: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    fetchData();
+    // Set refreshing status
+    setRefreshing(true);
+
+    // Clear the cached data to ensure we get fresh data
+    sessionStorage.removeItem('searchData');
+
+    // Reset pagination
+    setPage(1);
+    setHasMore(true);
+
+    // Show a short toast message
+    toast?.success(t('search.refreshing', 'Refreshing data...'));
+
+    // Fetch fresh data
+    fetchData(0, 3).finally(() => {
+      // Clear refreshing status when done (regardless of success/failure)
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 500); // Small delay for better UX
+    });
   };
 
   const closeModal = () => {
@@ -517,7 +631,7 @@ const Search: React.FC = () => {
     },
   };
 
-  if (loading) {
+  if (loading && filteredData.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -532,9 +646,17 @@ const Search: React.FC = () => {
           <p>{error}</p>
           <button
             onClick={handleRefresh}
-            className="mt-2 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-4 rounded"
+            disabled={refreshing}
+            className={`mt-2 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-4 rounded flex items-center mx-auto ${refreshing ? 'opacity-75' : ''}`}
           >
-            Retry
+            {refreshing ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                {t('search.retrying', 'Retrying...')}
+              </>
+            ) : (
+              t('common.retry', 'Retry')
+            )}
           </button>
         </div>
       </div>
@@ -557,9 +679,17 @@ const Search: React.FC = () => {
         </div>
         <button
           onClick={handleRefresh}
-          className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          disabled={refreshing}
+          className={`px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center ${refreshing ? 'opacity-75' : ''}`}
         >
-          {t('common.refresh', 'Refresh')}
+          {refreshing ? (
+            <>
+              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+              {t('search.refreshingText', 'Refreshing...')}
+            </>
+          ) : (
+            t('common.refresh', 'Refresh')
+          )}
         </button>
       </div>
 
@@ -701,8 +831,8 @@ const Search: React.FC = () => {
             exit="exit"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {filteredData.length > 0 ? (
-              filteredData.map((user, index) => (
+            {displayedData.length > 0 ? (
+              displayedData.map((user, index) => (
                 <motion.div
                   key={user.id}
                   custom={{ isGrid: true, index }}
@@ -721,6 +851,18 @@ const Search: React.FC = () => {
                 <NoResultsFound />
               </div>
             )}
+
+            {/* Intersection observer trigger */}
+            {hasMore && (
+              <div
+                id="load-more-trigger"
+                className="h-10 w-full col-span-full flex justify-center items-center"
+              >
+                {loading && (
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-300"></div>
+                )}
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -731,8 +873,8 @@ const Search: React.FC = () => {
             exit="exit"
             className="space-y-4"
           >
-            {filteredData.length > 0 ? (
-              filteredData.map((user, index) => (
+            {displayedData.length > 0 ? (
+              displayedData.map((user, index) => (
                 <motion.div
                   key={user.id}
                   custom={{ isGrid: false, index }}
@@ -758,6 +900,7 @@ const Search: React.FC = () => {
                             const target = e.target as HTMLImageElement;
                             target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
                           }}
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
@@ -790,13 +933,25 @@ const Search: React.FC = () => {
                       to={`/users/${user.id}`}
                       className="ml-4 px-4 py-2 bg-blue-600/70 cursor-pointer hover:bg-blue-700 text-white rounded transition-colors duration-300 flex-shrink-0"
                     >
-                      View
+                      {t('common.view', 'View')}
                     </Link>
                   </div>
                 </motion.div>
               ))
             ) : (
               <NoResultsFound />
+            )}
+
+            {/* Intersection observer trigger */}
+            {hasMore && (
+              <div
+                id="load-more-trigger"
+                className="h-10 w-full flex justify-center items-center"
+              >
+                {loading && (
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-300"></div>
+                )}
+              </div>
             )}
           </motion.div>
         )}
@@ -929,4 +1084,5 @@ const Search: React.FC = () => {
   );
 };
 
-export default Search;
+// Wrap the component with React.memo to prevent unnecessary re-renders
+export default React.memo(Search);

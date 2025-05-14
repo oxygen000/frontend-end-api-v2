@@ -155,7 +155,10 @@
     "userPlural": "users",
     "noResults": "No results found",
     "tryDifferent": "Try a different search term or adjust filters",
-    "userDetails": "User Details"
+    "userDetails": "User Details",
+    "refreshing": "Refreshing data...",
+    "refreshingText": "Refreshing...",
+    "retrying": "Retrying..."
   },
   "identification": {
     "title": "Face Identification",
@@ -195,12 +198,32 @@
     "submitRegistration": "Submit Registration",
     "clickToUpload": "Click to upload",
     "switchToUpload": "Switch to Upload",
-    "switchToCamera": "Switch to Camera"
+    "switchToCamera": "Switch to Camera",
+    "switchToCapture": "Switch to Capture",
+    "uploadImage": "Upload Image",
+    "submitting": "Submitting...",
+    "successMessage": "Registration Completed Successfully!",
+    "successDescription": "The person has been registered in the system and can now be identified.",
+    "travelInfo": "Travel Information",
+    "travelDate": "Travel Date",
+    "travelDestination": "Travel Destination",
+    "arrivalAirport": "Arrival Airport",
+    "arrivalDate": "Arrival Date",
+    "flightNumber": "Flight Number",
+    "returnDate": "Return Date",
+    "secondaryPhone": "Secondary Phone (Optional)",
+    "hasCriminalRecord": "Has Criminal Record",
+    "caseDetails": "Case Details",
+    "policeStation": "Police Station",
+    "caseNumber": "Case Number",
+    "judgment": "Judgment",
+    "accusation": "Accusation"
   },
   "forms": {
     "child": {
       "title": "Child Registration Form",
-      "childFullName": "Child's Full Name"
+      "childFullName": "Child's Full Name",
+      "childId": "Child's ID (Optional)"
     },
     "disabled": {
       "title": "Accompanying Person Registration",
@@ -224,7 +247,29 @@
     "invalidPhone": "Please enter a valid phone number",
     "invalidDate": "Please enter a valid date",
     "invalidPassword": "Password must be at least 8 characters",
-    "passwordMismatch": "Passwords do not match"
+    "passwordMismatch": "Passwords do not match",
+    "nameRequired": "Name is required",
+    "nameLength": "Name must be at least 2 characters long",
+    "dobRequired": "Date of Birth is required",
+    "ageMinimum": "Must be at least 18 years old",
+    "dobFuture": "Date of Birth cannot be in the future",
+    "nationalIdRequired": "National ID is required",
+    "nationalIdDigits": "National ID must be 10 digits",
+    "categoryRequired": "Category is required",
+    "phoneRequired": "Phone Number is required",
+    "phoneDigits": "Phone Number must be 10 digits",
+    "phoneCompanyRequired": "Telecom Company is required",
+    "secondPhoneDigits": "Second Phone Number must be 10 digits",
+    "caseDetailsRequired": "Case Details are required when criminal record exists",
+    "policeStationRequired": "Police Station is required when criminal record exists",
+    "caseNumberRequired": "Case Number is required when criminal record exists",
+    "licensePlateRequired": "License Plate is required for motorcycle",
+    "vehicleModelRequired": "Vehicle Model is required for motorcycle",
+    "licenseExpirationRequired": "License Expiration Date is required for motorcycle",
+    "licenseExpired": "License has expired",
+    "photoRequired": "Photo is required",
+    "imageSizeLimit": "Image size should be less than 5MB",
+    "imageTypeInvalid": "Please upload a valid image file (JPEG, PNG)"
   },
   "auth": {
     "login": "Login",

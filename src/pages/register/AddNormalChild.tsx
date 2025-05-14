@@ -740,12 +740,7 @@ function AddNormalChild() {
                 value={formData.name}
                 onChange={handleInputChange}
               />
-              <Input
-                label={t('forms.child.nationalId', "Child's ID")}
-                name="name"
-                value={formData.national_id}
-                onChange={handleInputChange}
-              />
+             
               <Input
                 label={t('registration.dateOfBirth')}
                 name="dob"
@@ -770,6 +765,18 @@ function AddNormalChild() {
                   <option value="female">{t('registration.female')}</option>
                 </select>
               </div>
+              <Input
+                label={t('forms.child.childId', "Child's ID (Optional)")}
+                name="national_id"
+                value={formData.national_id}
+                onChange={handleInputChange}
+              />
+              <Input
+                label={t('registration.address', 'Address')}
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+              />
               <SectionButtons onNext={nextSection} />
             </motion.div>
           )}
