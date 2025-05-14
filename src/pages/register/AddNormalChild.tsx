@@ -741,6 +741,12 @@ function AddNormalChild() {
                 onChange={handleInputChange}
               />
               <Input
+                label={t('forms.child.nationalId', "Child's ID")}
+                name="name"
+                value={formData.national_id}
+                onChange={handleInputChange}
+              />
+              <Input
                 label={t('registration.dateOfBirth')}
                 name="dob"
                 type="date"
