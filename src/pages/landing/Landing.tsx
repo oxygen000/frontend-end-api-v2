@@ -16,22 +16,7 @@ function Landing() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden">
-      {/* Navbar */}
-      <header className="absolute z-20 top-0 left-0 w-full p-4">
-        <div className="flex justify-between items-center w-full">
-          {/* الشعارات على اليسار */}
-          <div className="flex items-center space-x-4">
-            <img src="/landing/logo1.png" alt="logo1" className="h-12" />
-            <img src="/landing/logo2.png" alt="logo2" className="h-12" />
-          </div>
 
-          {/* اسم التطبيق على اليمين */}
-          <h1 className="text-white text-xl font-bold">Arab Republic of Egypt
-            <br/>
-            Ministry of Interior
-          </h1>
-        </div>
-      </header>
 
       {/* خلفية الفيديو */}
       <video

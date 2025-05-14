@@ -1,36 +1,41 @@
-import { useState } from "react";
-import { Link, Outlet } from "react-router-dom";
-import Sidebar from "../components/sidebar";
-import { motion, AnimatePresence } from "framer-motion";
-import UserMenu from "../components/usermenu";
-import LanguageToggle from "../components/LanguageToggle";
+import { useState } from 'react';
+import { Link, Outlet } from 'react-router-dom';
+import Sidebar from '../components/sidebar';
+import { motion, AnimatePresence } from 'framer-motion';
+import UserMenu from '../components/usermenu';
+import LanguageToggle from '../components/LanguageToggle';
+import { useTranslationWithFallback } from '../hooks/useTranslationWithFallback';
 
 function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { isRTL } = useTranslationWithFallback();
 
   const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev); // التبديل بين الفتح والإغلاق
+    setIsSidebarOpen((prev) => !prev);
   };
 
   const closeSidebar = () => {
-    setIsSidebarOpen(false); // إغلاق السايدبار عند النقر خارجًا أو عند الضغط على زر الخروج
+    setIsSidebarOpen(false);
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden bg-cover bg-center">
+    <div
+      className="min-h-screen flex relative overflow-hidden bg-cover bg-center"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       {/* Sidebar with toggle control */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
             className=""
-            initial={{ x: -300, opacity: 0 }} // يبدأ من اليسار مع اختفاء
-            animate={{ x: 0, opacity: 1 }} // يظهر بجانب المحتوى مع التلاشي
-            exit={{ x: -300, opacity: 0 }} // يختفي عند الإغلاق مع التلاشي
+            initial={{ x: isRTL ? 300 : -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: isRTL ? 300 : -300, opacity: 0 }}
             transition={{
-              type: "spring", // نوع الانتقال، لجعل الحركة أكثر مرونة
-              stiffness: 300, // القوة أو الصلابة
-              damping: 30, // التخميد لجعل الحركة أكثر سلاسة
-              duration: 0.5, // مدة الحركة
+              type: 'spring',
+              stiffness: 300,
+              damping: 30,
+              duration: 0.5,
             }}
           >
             <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
@@ -40,11 +45,19 @@ function Layout() {
 
       {/* Main content */}
       <motion.div
-        className={`flex-1 flex flex-col relative z-10 transition-all duration-300 ease-in-out ${isSidebarOpen ? "ml-64 md:ml-72" : "ml-0"}`} // تحريك المحتوى مع السايدبار
-        initial={{ opacity: 0 }} // يبدأ بالتلاشي
-        animate={{ opacity: 1 }} // يظهر بشكل تدريجي مع السايدبار
-        exit={{ opacity: 0 }} // يختفي عند الإغلاق
-        transition={{ duration: 0.3, ease: "easeInOut" }} // انتقال سلس
+        className={`flex-1 flex flex-col relative z-10 transition-all duration-300 ease-in-out ${
+          isSidebarOpen
+            ? isRTL
+              ? 'mr-64 md:mr-72'
+              : 'ml-64 md:ml-72'
+            : isRTL
+              ? 'mr-0'
+              : 'ml-0'
+        }`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {/* Page Content */}
         <motion.main
@@ -52,11 +65,11 @@ function Layout() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
           style={{
             backgroundImage: "url('/back1.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
         >
           {/* Navbar */}
@@ -65,13 +78,13 @@ function Layout() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            {/* Left Side: Site Name and Menu Button */}
+            {/* Left/Right Side (depends on RTL): Site Name and Menu Button */}
             <div className="flex items-center">
               <button
-                onClick={toggleSidebar} // التبديل بين الفتح والإغلاق
-                className="text-white hover:text-gray-500 focus:outline-none "
+                onClick={toggleSidebar}
+                className="text-white hover:text-gray-500 focus:outline-none"
               >
                 {isSidebarOpen ? (
                   <svg
@@ -90,7 +103,7 @@ function Layout() {
                   </svg>
                 ) : (
                   <svg
-                    className="w-6 h-6 transition-all duration-300 ease-in-out "
+                    className="w-6 h-6 transition-all duration-300 ease-in-out"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -105,16 +118,20 @@ function Layout() {
                   </svg>
                 )}
               </button>
-              <Link to={'/home'} className="text-xl text-white font-bold ml-4">Face ID</Link>
+              <Link
+                to={'/home'}
+                className={`text-xl text-white font-bold ${isRTL ? 'mr-4' : 'ml-4'}`}
+              >
+                Face ID
+              </Link>
             </div>
 
-            {/* Right Side: Language Toggle and User Menu */}
+            {/* Opposite Side: Language Toggle and User Menu */}
             <div className="flex items-center ml-auto gap-4">
               <LanguageToggle />
               <UserMenu />
             </div>
           </motion.header>
-
 
           {/* Page Content */}
           <Outlet />
