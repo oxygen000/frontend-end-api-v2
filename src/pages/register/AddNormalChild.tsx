@@ -85,6 +85,8 @@ interface FormData {
   last_seen_location: string;
   last_seen_clothes: string;
   physical_description: string;
+  additional_data: string;
+  medical_condition: string;
 
   // Additional information
   additional_notes: string;
@@ -102,11 +104,13 @@ const initialFormData: FormData = {
   address: '',
   guardian_name: '',
   guardian_phone: '',
+  medical_condition: '',
   relationship: '',
   last_seen_time: '',
   last_seen_location: '',
   last_seen_clothes: '',
   physical_description: '',
+  additional_data: '',
   additional_notes: '',
   form_type: 'child',
   image: null,
@@ -322,6 +326,7 @@ function AddNormalChild() {
         address: formData.address || '',
         category: 'child',
         form_type: 'child',
+        additional_data: formData.additional_data || '',
         physical_description: formData.physical_description || '',
         last_clothes: formData.last_seen_clothes || '',
         area_of_disappearance: formData.last_seen_location || '',
@@ -799,9 +804,12 @@ function AddNormalChild() {
                   <option value="WE">WE</option>
                 </select>
               </div>
-              <div>
-                <label className="block font-medium mb-1 text-sm sm:text-base">
-                  {t('forms.child.relationshipToMissing')}
+              <div className="mb-4">
+                <label className="block font-medium mb-1">
+                  {t(
+                    'forms.child.relationshipToMissing',
+                    'Relationship to Missing Person'
+                  )}
                 </label>
                 <select
                   name="relationship"
@@ -809,13 +817,25 @@ function AddNormalChild() {
                   onChange={handleInputChange}
                   className="w-full px-3 sm:px-4 py-2 text-black bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 >
-                  <option value="">Select Relationship</option>
-                  <option value="parent">Parent</option>
-                  <option value="grandparent">Grandparent</option>
-                  <option value="sibling">Sibling</option>
-                  <option value="aunt/uncle">Aunt/Uncle</option>
-                  <option value="legalGuardian">Legal Guardian</option>
-                  <option value="other">Other</option>
+                  <option value="">
+                    {t('relationships.select', 'Select Relationship')}
+                  </option>
+                  <option value="parent">
+                    {t('relationships.parent', 'Parent')}
+                  </option>
+                  <option value="grandparent">
+                    {t('relationships.grandparent', 'Grandparent')}
+                  </option>
+                  <option value="sibling">
+                    {t('relationships.sibling', 'Sibling')}
+                  </option>
+                  <option value="aunt/uncle">
+                    {t('relationships.auntUncle', 'Aunt/Uncle')}
+                  </option>
+                  <option value="legalGuardian">
+                    {t('relationships.legalGuardian', 'Legal Guardian')}
+                  </option>
+                  <option value="other">{t('common.other', 'Other')}</option>
                 </select>
               </div>
               <SectionButtons onPrev={prevSection} onNext={nextSection} />
@@ -857,10 +877,22 @@ function AddNormalChild() {
                 value={formData.last_seen_clothes}
                 onChange={handleInputChange}
               />
+               <Textarea
+                label={t('forms.child.medicalCondition', 'Medical Condition')}
+                name="medical_condition"
+                value={formData.medical_condition}
+                onChange={handleInputChange}
+              />
               <Textarea
                 label={t('forms.child.distinguishingMark')}
                 name="physical_description"
                 value={formData.physical_description}
+                onChange={handleInputChange}
+              />
+              <Textarea
+                label={t('forms.child.additionalData')}
+                name="additional_data"
+                value={formData.additional_data}
                 onChange={handleInputChange}
               />
               <Textarea

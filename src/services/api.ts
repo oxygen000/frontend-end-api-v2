@@ -100,6 +100,7 @@ export interface ChildUser extends BaseUser {
   area_of_disappearance?: string;
   last_known_location?: string;
   last_seen_time?: string;
+  additional_data?: string;
 }
 
 export interface DisabledUser extends BaseUser {
@@ -182,6 +183,7 @@ interface ChildData {
   guardian_phone?: string;
   guardian_id?: string;
   relationship?: string;
+  additional_data?: string;
 }
 
 interface DisabledData {

@@ -30,12 +30,14 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
             aria-label="Disabled"
           >
             <FaWheelchair />
+            <span className="text-sm">Disabled</span>
           </Link>
           <Link  to="/Search"
             className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-yellow-600 hover:bg-yellow-700"
             aria-label="Child"
           >
             <FaChild />
+            <span className="text-sm">Child</span>
           </Link>
         </div>
 

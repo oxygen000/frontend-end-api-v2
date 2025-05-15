@@ -22,6 +22,14 @@
     "notAvailable": "Not Available",
     "hidden": "Hidden"
   },
+  "relationships": {
+    "parent": "Parent",
+    "grandparent": "Grandparent",
+    "sibling": "Sibling",
+    "auntUncle": "Aunt/Uncle",
+    "legalGuardian": "Legal Guardian",
+    "select": "Select Relationship"
+  },
   "physical": "Physical Disability",
   "visual": "Visual Impairment",
   "hearing": "Hearing Impairment",
@@ -248,7 +256,23 @@
       "distinguishingMark": "Distinguishing Mark",
       "previousDisputes": "Previous Disputes",
       "medicalHistory": "Medical History",
-      "relationshipToMissing": "Relationship to Missing Person"
+      "relationshipToMissing": "Relationship to Missing Person",
+      "viewImage": "View Image",
+      "clickToEnlarge": "Click to enlarge image",
+      "close": "Close",
+      "previousDispute": "Previous Disputes",
+      "closeImage": "Close Image",
+      "reporterName": "Reporter's Name",
+      "reporterNationalId": "Reporter's National ID",
+      "reporterAddress": "Reporter's Address",
+      "reporterPhone": "Reporter's Phone Number",
+      "reporterAltPhone": "Additional Phone Number",
+      "phoneNumber": "Phone Number",
+      "disappearanceLocation": "Disappearance Location",
+      "clothes": "Clothing Description",
+      "recentPhoto": "Recent Photo",
+      "additionalData": "Previous Disputes",
+      "medicalCondition": "Medical History"
     },
     "disabled": {
       "title": "Accompanying Person Registration",
@@ -257,7 +281,27 @@
       "disabilityDetails": "Disability Details",
       "medicalConditions": "Medical Conditions",
       "emergencyContact": "Emergency Contact",
-      "specialNeeds": "Special Needs"
+      "specialNeeds": "Special Needs",
+      "reporterInfo": "Reporter's Information",
+      "reporterName": "Reporter's Name",
+      "reporterNationalId": "Reporter's National ID",
+      "reporterAddress": "Reporter's Address",
+      "reporterPhone": "Reporter's Phone Number",
+      "reporterAltPhone": "Additional Phone Number",
+      "relationshipToMissing": "Relationship to Missing Person",
+      "missingPersonInfo": "Missing Person's Information",
+      "missingPersonName": "Name",
+      "age": "Age",
+      "nationalId": "National ID (if available)",
+      "phoneNumber": "Phone Number",
+      "disappearanceLocation": "Place of Disappearance",
+      "dateOfDisappearance": "Date of Disappearance",
+      "lastSeenLocation": "Last Seen Location",
+      "distinguishingMark": "Distinguishing Mark",
+      "clothes": "Clothing Description",
+      "previousDisputes": "Previous Disputes",
+      "medicalHistory": "Medical History",
+      "recentPhoto": "Recent Photo"
     },
     "man": {
       "title": "Male Registration"

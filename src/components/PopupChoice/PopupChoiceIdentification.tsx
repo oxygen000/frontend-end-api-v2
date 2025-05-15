@@ -33,12 +33,14 @@ const PopupChoiceIdentification: React.FC<PopupChoiceIdentificationProps> = ({
             aria-label="Male"
           >
             <FaMale />
+            <span className="text-sm">Man</span>
           </Link>
           <Link  to="/identification"
             className={`${iconButtonStyle} bg-pink-600 hover:bg-pink-700`}
             aria-label="Female"
           >
             <FaFemale />
+            <span className="text-sm">Woman</span>
           </Link>
          
         </div>

@@ -317,6 +317,11 @@ function Userdata() {
             {user?.image_path && (
               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                 <FiMaximize className="text-white text-lg" />
+                {isChildRecord && (
+                  <span className="sr-only">
+                    {t('forms.child.clickToEnlarge')}
+                  </span>
+                )}
               </div>
             )}
             {user?.image_path ? (
@@ -395,6 +400,9 @@ function Userdata() {
               <button
                 className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
                 onClick={() => setImageModalOpen(false)}
+                aria-label={
+                  isChildRecord ? t('forms.child.close') : t('common.cancel')
+                }
               >
                 <FiX size={24} />
               </button>
@@ -405,6 +413,11 @@ function Userdata() {
               />
               <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-3 text-center">
                 {user.name}
+                {isChildRecord && (
+                  <span className="ml-2 text-sm opacity-70">
+                    {t('forms.child.viewImage')}
+                  </span>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -631,8 +644,8 @@ function Userdata() {
                       {t('forms.child.age', 'Age:')}
                     </span>
                     <span className="text-white font-medium text-sm">
-                      {user.date_of_birth
-                        ? calculateAge(user.date_of_birth)
+                      {user.date_of_birth || user.dob
+                        ? calculateAge(String(user.date_of_birth || user.dob))
                         : t('users.notAvailable', 'N/A')}
                     </span>
                   </div>
@@ -721,6 +734,40 @@ function Userdata() {
 
                   <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
                     <span className="text-white/70 text-sm">
+                      {t('forms.child.previousDisputes', 'Previous Disputes:')}
+                    </span>
+                    <span className="text-white font-medium text-sm" dir="auto">
+                      {(() => {
+                        // Check if the value is a JSON string and extract the right field
+                        try {
+                          if (
+                            user.additional_data &&
+                            user.additional_data.includes('{')
+                          ) {
+                            const parsed = JSON.parse(user.additional_data);
+                            return (
+                              parsed.additional_data ||
+                              parsed.additional_notes ||
+                              user.additional_data
+                            );
+                          }
+                          return (
+                            user.additional_data ||
+                            t('users.notAvailable', 'N/A')
+                          );
+                        } catch {
+                          // If parsing fails, just show the original data
+                          return (
+                            user.additional_data ||
+                            t('users.notAvailable', 'N/A')
+                          );
+                        }
+                      })()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
                       {t('forms.child.medicalHistory', 'Medical History:')}
                     </span>
                     <span className="text-white font-medium text-sm">
@@ -734,88 +781,313 @@ function Userdata() {
             </>
           )}
 
-          {/* Disabled Person Information Section */}
+          {/* Disabled Person Information Section - RESTRUCTURED */}
           {isDisabledPerson && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className={`bg-gradient-to-br ${SECTION_COLORS.disabled.gradient} backdrop-blur-md rounded-xl p-4 sm:p-6 border ${SECTION_COLORS.disabled.border} shadow-lg`}
-            >
-              <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center">
-                <FiInfo
-                  className={`${isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'} ${SECTION_COLORS.disabled.icon}`}
-                  size={20}
-                />
-                {t('forms.disabled.disabilityInfo', 'Disability Information')}
-              </h2>
+            <>
+              {/* Reporter's Information */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className={`bg-gradient-to-br ${SECTION_COLORS.disabled.gradient} backdrop-blur-md rounded-xl p-4 sm:p-6 border ${SECTION_COLORS.disabled.border} shadow-lg`}
+              >
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center">
+                  <FaUserTag
+                    className={`${isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'} ${SECTION_COLORS.disabled.icon}`}
+                    size={20}
+                  />
+                  {t('forms.disabled.reporterInfo', "Reporter's Information")}
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70 text-sm">
-                    {t('forms.disabled.disabilityType', 'Disability Type:')}
-                  </span>
-                  <span className="text-white font-medium text-sm">
-                    {user.disability_type &&
-                      t(
-                        user.disability_type,
-                        maskSensitiveInfo(user.disability_type)
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.reporterName', "Reporter's Name:")}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.guardian_name)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.reporterNationalId', 'National ID:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.guardian_id)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.reporterAddress', 'Address:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.address)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.reporterPhone', 'Phone Number:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.guardian_phone)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.reporterAltPhone',
+                        'Additional Phone Number:'
                       )}
-                  </span>
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.second_phone_number ||
+                          t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.relationshipToMissing',
+                        'Relationship to Missing Person:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.category || t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Missing Person's Information */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className={`bg-gradient-to-br ${SECTION_COLORS.disabled.gradient} backdrop-blur-md rounded-xl p-4 sm:p-6 border ${SECTION_COLORS.disabled.border} shadow-lg mt-4 sm:mt-6`}
+              >
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center">
+                  <FiUser
+                    className={`${isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'} ${SECTION_COLORS.disabled.icon}`}
+                    size={20}
+                  />
+                  {t(
+                    'forms.disabled.missingPersonInfo',
+                    "Missing Person's Information"
+                  )}
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.missingPersonName', 'Name:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.name)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.age', 'Age:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {user.date_of_birth || user.dob
+                        ? calculateAge(String(user.date_of_birth || user.dob))
+                        : t('users.notAvailable', 'N/A')}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.nationalId',
+                        'National ID (if available):'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.national_id || t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.phoneNumber', 'Phone Number:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.phone_number || t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.disappearanceLocation',
+                        'Place of Disappearance:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.area_of_disappearance ||
+                          t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.dateOfDisappearance',
+                        'Date of Disappearance:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {formatDate(user.last_seen_time) ||
+                        t('users.notAvailable', 'N/A')}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.lastSeenLocation',
+                        'Last Seen Location:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.area_of_disappearance ||
+                          t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.distinguishingMark',
+                        'Distinguishing Mark:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.physical_description ||
+                          t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.clothes', 'Clothing Description:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.last_clothes || t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.previousDisputes',
+                        'Previous Disputes:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.additional_data || t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.medicalHistory', 'Medical History:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(
+                        user.medical_condition || t('users.notAvailable', 'N/A')
+                      )}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70 text-sm">
-                    {t(
-                      'forms.disabled.disabilityDetails',
-                      'Disability Description:'
-                    )}
-                  </span>
-                  <span className="text-white font-medium text-sm">
-                    {maskSensitiveInfo(user.disability_description)}
-                  </span>
-                </div>
+                {/* Disability-specific information */}
+                <h3 className="text-base sm:text-lg font-semibold text-white mt-4 mb-3">
+                  {t('forms.disabled.disabilityInfo', 'Disability Information')}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.disabilityType', 'Disability Type:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {user.disability_type &&
+                        t(
+                          user.disability_type,
+                          maskSensitiveInfo(user.disability_type)
+                        )}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70 text-sm">
-                    {t(
-                      'forms.disabled.medicalConditions',
-                      'Medical Condition:'
-                    )}
-                  </span>
-                  <span className="text-white font-medium text-sm">
-                    {maskSensitiveInfo(user.medical_condition)}
-                  </span>
-                </div>
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.disabilityDetails',
+                        'Disability Description:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.disability_description)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70 text-sm">
-                    {t('forms.disabled.specialNeeds', 'Special Needs:')}
-                  </span>
-                  <span className="text-white font-medium text-sm">
-                    {maskSensitiveInfo(user.special_needs)}
-                  </span>
-                </div>
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('forms.disabled.specialNeeds', 'Special Needs:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.special_needs)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70 text-sm">
-                    {t('forms.disabled.emergencyContact', 'Emergency Contact:')}
-                  </span>
-                  <span className="text-white font-medium text-sm">
-                    {maskSensitiveInfo(user.emergency_contact)}
-                  </span>
-                </div>
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t(
+                        'forms.disabled.emergencyContact',
+                        'Emergency Contact:'
+                      )}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.emergency_contact)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                  <span className="text-white/70 text-sm">
-                    {t('users.emergencyPhone', 'Emergency Phone:')}
-                  </span>
-                  <span className="text-white font-medium text-sm">
-                    {maskSensitiveInfo(user.emergency_phone)}
-                  </span>
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white/70 text-sm">
+                      {t('users.emergencyPhone', 'Emergency Phone:')}
+                    </span>
+                    <span className="text-white font-medium text-sm">
+                      {maskSensitiveInfo(user.emergency_phone)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </>
           )}
 
           {/* Adult/Man Information Section */}

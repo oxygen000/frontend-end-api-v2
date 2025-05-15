@@ -22,6 +22,14 @@
     "notAvailable": "غير متوفر",
     "hidden": "مخفي"
   },
+  "relationships": {
+    "parent": "الوالد/الوالدة",
+    "grandparent": "الجد/الجدة",
+    "sibling": "الأخ/الأخت",
+    "auntUncle": "العم/العمة/الخال/الخالة",
+    "legalGuardian": "الوصي القانوني",
+    "select": "اختر صلة القرابة"
+  },
   "physical": "إعاقة جسدية",
   "visual": "إعاقة بصرية",
   "hearing": "إعاقة سمعية",
@@ -264,7 +272,15 @@
       "previousDisputes": "خلافات سابقه",
       "medicalHistory": "تاريخ مرضي",
       "recentPhoto": "صوره حديثه للمتغيب",
-      "yearsOld": "سنة"
+      "yearsOld": "سنة",
+      
+      "viewImage": "عرض الصورة",
+      "clickToEnlarge": "اضغط لتكبير الصورة",
+      "close": "إغلاق",
+      "previousDispute": "الخلافات السابقة",
+      "closeImage": "إغلاق الصورة",
+      "additionalData": "خلافات سابقة",
+      "medicalCondition": "تاريخ مرضي"
     },
     "disabled": {
       "title": "تسجيل شخص مرافق",
@@ -273,7 +289,27 @@
       "disabilityDetails": "تفاصيل الإعاقة",
       "medicalConditions": "الحالات الطبية",
       "emergencyContact": "جهة اتصال للطوارئ",
-      "specialNeeds": "احتياجات خاصة"
+      "specialNeeds": "احتياجات خاصة",
+      "reporterInfo": "بيانات المبلغ / الدرجه الاولى",
+      "reporterName": "الاسم",
+      "reporterNationalId": "الرقم القومي",
+      "reporterAddress": "العنوان",
+      "reporterPhone": "رقم التليفون",
+      "reporterAltPhone": "رقم أخر",
+      "relationshipToMissing": "صله القرابه",
+      "missingPersonInfo": "بيانات المتغيب",
+      "missingPersonName": "الاسم",
+      "age": "السن",
+      "nationalId": "الرقم القرمي ان وجد",
+      "phoneNumber": "رقم الهاتف",
+      "disappearanceLocation": "مكان الغياب",
+      "dateOfDisappearance": "تاريخ الغياب",
+      "lastSeenLocation": "اخر مشاهده للمتغيب",
+      "distinguishingMark": "علامه مميزه",
+      "clothes": "أوصاف الملابس",
+      "previousDisputes": "خلافات سابقه",
+      "medicalHistory": "تاريخ مرضي",
+      "recentPhoto": "صوره حديثه للمتغيب"
     },
     "man": {
       "title": "تسجيل ذكر"

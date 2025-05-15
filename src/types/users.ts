@@ -25,7 +25,7 @@ export const users: User[] = [
     role: 'admin',
     dateJoined: '2023-01-15T08:30:00Z',
     lastLogin: '2023-10-25T14:20:00Z',
-    profileImageUrl: 'https://i.pravatar.cc/150?img=1',
+    profileImageUrl: 'login/profile.png',
     isActive: true,
   },
   {
@@ -39,7 +39,7 @@ export const users: User[] = [
     role: 'user',
     dateJoined: '2023-02-20T10:15:00Z',
     lastLogin: '2023-10-24T09:45:00Z',
-    profileImageUrl: 'https://i.pravatar.cc/150?img=5',
+    profileImageUrl: 'login/profile.png',
     isActive: true,
   },
   {
@@ -53,7 +53,7 @@ export const users: User[] = [
     role: 'user',
     dateJoined: '2023-03-10T15:45:00Z',
     lastLogin: '2023-10-23T16:30:00Z',
-    profileImageUrl: 'https://i.pravatar.cc/150?img=8',
+    profileImageUrl: 'login/profile.png',
     isActive: true,
   },
 ];

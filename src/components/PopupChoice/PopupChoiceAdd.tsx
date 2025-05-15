@@ -63,6 +63,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
               aria-label="Male"
             >
               <FaMale />
+              <span className="text-sm">Man</span>
             </button>
             <button
               onClick={() => handleGenderSelect("female")}
@@ -70,6 +71,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
               aria-label="Female"
             >
               <FaFemale />
+              <span className="text-sm">Woman</span>
             </button>
           </div>
         ) : (
@@ -83,6 +85,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
                     aria-label="Man"
                   >
                     <FaMale />
+                    <span className="text-sm">Man</span>
                   </button>
                   <button
                     onClick={() => handleFinalChoice(PERSON_CATEGORIES.CHILD)}
@@ -90,6 +93,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
                     aria-label="Child"
                   >
                     <FaChild />
+                    <span className="text-sm">Child</span>
                   </button>
                   <button
                     onClick={() => handleFinalChoice(PERSON_CATEGORIES.DISABLED)}
@@ -97,6 +101,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
                     aria-label="Disabled"
                   >
                     <FaWheelchair />
+                    <span className="text-sm">Disabled</span>
                   </button>
                 </>
               ) : (
@@ -107,6 +112,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
                     aria-label="Woman"
                   >
                     <FaFemale />
+                    <span className="text-sm">Woman</span>
                   </button>
                   <button
                     onClick={() => handleFinalChoice(PERSON_CATEGORIES.CHILD)}
@@ -114,6 +120,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
                     aria-label="Girl"
                   >
                     <FaChild />
+                    <span className="text-sm">Girl</span>
                   </button>
                   <button
                     onClick={() => handleFinalChoice(PERSON_CATEGORIES.DISABLED)}
@@ -121,6 +128,7 @@ const PopupChoiceAdd: React.FC<PopupChoiceAddProps> = ({
                     aria-label="Disabled"
                   >
                     <FaWheelchair />
+                    <span className="text-sm">Disabled</span>
                   </button>
                 </>
               )}
