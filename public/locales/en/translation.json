@@ -238,7 +238,17 @@
     "child": {
       "title": "Child Registration Form",
       "childFullName": "Child's Full Name",
-      "childId": "Child's ID (Optional)"
+      "childId": "Child's ID (Optional)",
+      "reporterInfo": "Reporter's Information",
+      "missingPersonInfo": "Missing Person's Information",
+      "age": "Age",
+      "yearsOld": "years old",
+      "dateOfDisappearance": "Date of Disappearance",
+      "lastSeenLocation": "Last Seen Location",
+      "distinguishingMark": "Distinguishing Mark",
+      "previousDisputes": "Previous Disputes",
+      "medicalHistory": "Medical History",
+      "relationshipToMissing": "Relationship to Missing Person"
     },
     "disabled": {
       "title": "Accompanying Person Registration",

@@ -244,7 +244,17 @@
     "child": {
       "title": "نموذج تسجيل الطفل",
       "childFullName": "الاسم الكامل للطفل",
-      "childId": "الرقم التعريفي للطفل (اختياري)"
+      "childId": "الرقم التعريفي للطفل (اختياري)",
+      "reporterInfo": "معلومات المُبلغ",
+      "missingPersonInfo": "معلومات الشخص المفقود",
+      "age": "العمر",
+      "yearsOld": "سنة",
+      "dateOfDisappearance": "تاريخ الاختفاء",
+      "lastSeenLocation": "آخر مكان شوهد فيه",
+      "distinguishingMark": "علامات مميزة",
+      "previousDisputes": "خلافات سابقة",
+      "medicalHistory": "التاريخ الطبي",
+      "relationshipToMissing": "صلة القرابة بالمفقود"
     },
     "disabled": {
       "title": "تسجيل شخص مرافق",
