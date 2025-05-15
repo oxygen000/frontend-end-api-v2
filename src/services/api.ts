@@ -101,6 +101,7 @@ export interface ChildUser extends BaseUser {
   last_known_location?: string;
   last_seen_time?: string;
   additional_data?: string;
+  medical_condition?: string;
 }
 
 export interface DisabledUser extends BaseUser {
@@ -701,6 +702,8 @@ export const registrationApi = {
             (formData.get('area_of_disappearance') as string) || '',
           last_seen_time: (formData.get('last_seen_time') as string) || '',
           additional_notes: (formData.get('additional_notes') as string) || '',
+          medical_condition:
+            (formData.get('medical_condition') as string) || '',
         };
 
         // If file was provided in formData, extract it

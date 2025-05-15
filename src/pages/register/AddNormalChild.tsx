@@ -292,7 +292,7 @@ function AddNormalChild() {
       formDataToSend.append('phone_number', formData.guardian_phone || '');
       formDataToSend.append('phone_company', formData.phone_company || '');
 
-      // Child-specific fields
+      // Add Child-specific fields
       formDataToSend.append(
         'physical_description',
         formData.physical_description || ''
@@ -310,6 +310,10 @@ function AddNormalChild() {
       formDataToSend.append(
         'additional_notes',
         formData.additional_notes || ''
+      );
+      formDataToSend.append(
+        'medical_condition',
+        formData.medical_condition || ''
       );
 
       // Additional important fields
@@ -337,6 +341,7 @@ function AddNormalChild() {
         relationship: formData.relationship || '',
         gender: formData.gender || '',
         additional_notes: formData.additional_notes || '',
+        medical_condition: formData.medical_condition || '',
         // Required fields for the backend database
         phone_number: formData.guardian_phone || '',
         phone_company: formData.phone_company || '',
@@ -877,8 +882,8 @@ function AddNormalChild() {
                 value={formData.last_seen_clothes}
                 onChange={handleInputChange}
               />
-               <Textarea
-                label={t('forms.child.medicalCondition', 'Medical Condition')}
+              <Textarea
+                label={t('forms.child.medicalHistory', 'Medical History')}
                 name="medical_condition"
                 value={formData.medical_condition}
                 onChange={handleInputChange}
