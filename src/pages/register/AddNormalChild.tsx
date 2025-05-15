@@ -708,17 +708,17 @@ function AddNormalChild() {
               className="space-y-3 sm:space-y-4"
             >
               <h3 className="text-base sm:text-lg font-semibold">
-                {t('registration.personalInfo')}
+                {t('forms.child.missingPersonInfo')}
               </h3>
               <Input
-                label={t('forms.child.childFullName', "Child's Full Name")}
+                label={t('forms.child.childFullName')}
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
               />
 
               <Input
-                label={t('registration.dateOfBirth')}
+                label={t('forms.child.age')}
                 name="dob"
                 type="date"
                 value={formData.dob}
@@ -742,13 +742,13 @@ function AddNormalChild() {
                 </select>
               </div>
               <Input
-                label={t('forms.child.childId', "Child's ID (Optional)")}
+                label={t('forms.child.childId')}
                 name="national_id"
                 value={formData.national_id}
                 onChange={handleInputChange}
               />
               <Input
-                label={t('registration.address', 'Address')}
+                label={t('registration.address')}
                 name="address"
                 value={formData.address}
                 onChange={handleInputChange}
@@ -768,23 +768,23 @@ function AddNormalChild() {
               className="space-y-3 sm:space-y-4"
             >
               <h3 className="text-base sm:text-lg font-semibold">
-                Guardian Information
+                {t('forms.child.reporterInfo')}
               </h3>
               <Input
-                label="Guardian's Name"
+                label={t('forms.child.reporterName')}
                 name="guardian_name"
                 value={formData.guardian_name}
                 onChange={handleInputChange}
               />
               <Input
-                label="Guardian's Phone Number"
+                label={t('forms.child.reporterPhone')}
                 name="guardian_phone"
                 value={formData.guardian_phone}
                 onChange={handleInputChange}
               />
               <div>
                 <label className="block font-medium mb-1 text-sm sm:text-base">
-                  Telecom Company
+                  {t('registration.phoneCompany')}
                 </label>
                 <select
                   name="phone_company"
@@ -801,7 +801,7 @@ function AddNormalChild() {
               </div>
               <div>
                 <label className="block font-medium mb-1 text-sm sm:text-base">
-                  Relationship to Child
+                  {t('forms.child.relationshipToMissing')}
                 </label>
                 <select
                   name="relationship"
@@ -833,35 +833,38 @@ function AddNormalChild() {
               className="space-y-3 sm:space-y-4"
             >
               <h3 className="text-base sm:text-lg font-semibold">
-                Disappearance Details
+                {t('forms.child.missingPersonInfo')}
               </h3>
               <Input
-                label="Last Seen (Date & Time)"
+                label={t('forms.child.dateOfDisappearance')}
                 name="last_seen_time"
                 type="datetime-local"
                 value={formData.last_seen_time}
                 onChange={handleInputChange}
               />
               <Input
-                label="Last Known Location"
+                label={t(
+                  'forms.child.disappearanceLocation',
+                  'Last Known Location'
+                )}
                 name="last_seen_location"
                 value={formData.last_seen_location}
                 onChange={handleInputChange}
               />
               <Textarea
-                label="Clothes Worn When Last Seen"
+                label={t('forms.child.clothes', 'Clothes Worn When Last Seen')}
                 name="last_seen_clothes"
                 value={formData.last_seen_clothes}
                 onChange={handleInputChange}
               />
               <Textarea
-                label="Physical Description"
+                label={t('forms.child.distinguishingMark')}
                 name="physical_description"
                 value={formData.physical_description}
                 onChange={handleInputChange}
               />
               <Textarea
-                label="Additional Notes"
+                label={t('forms.child.previousDisputes')}
                 name="additional_notes"
                 value={formData.additional_notes}
                 onChange={handleInputChange}
@@ -881,11 +884,10 @@ function AddNormalChild() {
               className="space-y-3 sm:space-y-4"
             >
               <h3 className="text-base sm:text-lg font-semibold">
-                Child's Photo
+                {t('forms.child.recentPhoto', "Child's Photo")}
               </h3>
               <p className="text-white/80 text-sm sm:text-base">
-                Please upload a clear photo of the child's face to help with
-                identification.
+                {t('registration.photoInstructions')}
               </p>
               <div className="flex flex-col items-center">
                 {/* Toggle between upload and camera capture */}
@@ -896,8 +898,8 @@ function AddNormalChild() {
                     className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base bg-orange-600 text-white rounded hover:bg-orange-700"
                   >
                     {formData.useCamera
-                      ? 'Switch to Upload'
-                      : 'Switch to Camera'}
+                      ? t('registration.switchToUpload')
+                      : t('registration.switchToCamera')}
                   </button>
                   <div>
                     {formData.useCamera ? (
@@ -911,7 +913,7 @@ function AddNormalChild() {
                 {!formData.useCamera ? (
                   <div className="flex flex-col items-center">
                     <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
-                      Upload Child's Photo
+                      {t('registration.uploadImage')}
                     </label>
                     <div
                       className="cursor-pointer"
@@ -919,7 +921,10 @@ function AddNormalChild() {
                         document.getElementById('fileInput')?.click()
                       }
                     >
-                      <AnimatedFaceIcon size="md" text="Click to upload" />
+                      <AnimatedFaceIcon
+                        size="md"
+                        text={t('registration.clickToUpload')}
+                      />
                       <input
                         id="fileInput"
                         type="file"
@@ -981,7 +986,8 @@ function AddNormalChild() {
                           className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center mx-auto text-sm sm:text-base"
                           onClick={captureImage}
                         >
-                          <FaCamera className="mr-2" /> Capture Photo
+                          <FaCamera className="mr-2" />{' '}
+                          {t('registration.capturePhoto')}
                         </button>
                       </>
                     ) : (
@@ -1007,7 +1013,8 @@ function AddNormalChild() {
                           className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center text-sm sm:text-base"
                           onClick={retakePhoto}
                         >
-                          <FaRedo className="mr-2" /> Retake Photo
+                          <FaRedo className="mr-2" />{' '}
+                          {t('registration.retakePhoto')}
                         </button>
                       </>
                     )}
@@ -1065,7 +1072,7 @@ function AddNormalChild() {
                           d="M4 12l2 2 4-4m6 2a9 9 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Processing...
+                      {t('registration.submitting', 'Processing...')}
                     </div>
                   ) : (
                     <>
@@ -1083,7 +1090,7 @@ function AddNormalChild() {
                           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      Submit Registration
+                      {t('registration.submitRegistration')}
                     </>
                   )}
                 </button>

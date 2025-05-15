@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiUser,
   FiCalendar,
@@ -16,6 +16,8 @@ import {
   FiFileText,
   FiActivity,
   FiTrash2,
+  FiX,
+  FiMaximize,
 } from 'react-icons/fi';
 import { FaIdCard, FaUserTag, FaFingerprint, FaCar } from 'react-icons/fa';
 import axios from 'axios';
@@ -121,6 +123,7 @@ function Userdata() {
   const [isIdentityRevealed] = useState<boolean>(true);
   const [showEmptyFields] = useState<boolean>(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+  const [imageModalOpen, setImageModalOpen] = useState<boolean>(false);
   const { t, isRTL } = useTranslationWithFallback();
 
   useEffect(() => {
@@ -307,8 +310,16 @@ function Userdata() {
         }`}
       >
         <div className="flex flex-col md:flex-row items-center md:items-start gap-4 sm:gap-6">
-          <div className="w-20 h-20 sm:w-28 sm:h-28 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-lg border-2 border-white/30">
-            {user.image_path ? (
+          <div
+            className="w-20 h-20 sm:w-28 sm:h-28 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-lg border-2 border-white/30 cursor-pointer relative group"
+            onClick={() => user?.image_path && setImageModalOpen(true)}
+          >
+            {user?.image_path && (
+              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <FiMaximize className="text-white text-lg" />
+              </div>
+            )}
+            {user?.image_path ? (
               <img
                 src={getImageUrl(user.image_path, user.name)}
                 alt={user.name}
@@ -316,7 +327,7 @@ function Userdata() {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                {user.name.charAt(0).toUpperCase()}
+                {user?.name.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
@@ -363,6 +374,42 @@ function Userdata() {
           </div>
         </div>
       </motion.div>
+
+      {/* Image Modal */}
+      <AnimatePresence>
+        {imageModalOpen && user?.image_path && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setImageModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                onClick={() => setImageModalOpen(false)}
+              >
+                <FiX size={24} />
+              </button>
+              <img
+                src={getImageUrl(user.image_path, user.name)}
+                alt={user.name}
+                className="max-h-[85vh] max-w-full object-contain"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-3 text-center">
+                {user.name}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* User details grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -671,8 +718,6 @@ function Userdata() {
                       {maskSensitiveInfo(user.last_clothes)}
                     </span>
                   </div>
-
-               
 
                   <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
                     <span className="text-white/70 text-sm">
