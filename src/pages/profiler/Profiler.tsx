@@ -8,9 +8,7 @@ import {
   FiUser,
   FiInfo,
   FiCalendar,
-  FiLock,
   FiMail,
-  FiLogOut,
   FiPhone,
   FiHome,
   FiClock,
@@ -93,14 +91,7 @@ function Profiler() {
     fetchUserProfile();
   }, [navigate, params.id, t]);
 
-  const handleLogout = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem('loggedInUserId');
-    localStorage.removeItem('loggedInUsername');
 
-    // Redirect to login page
-    navigate('/login');
-  };
 
   // Format date function
   const formatDate = (dateString: string | undefined) => {
@@ -147,16 +138,7 @@ function Profiler() {
           {t('users.myProfile', 'My Profile')}
         </h1>
 
-        {/* Only show logout button for the logged-in user */}
-        {!params.id && (
-          <button
-            onClick={handleLogout}
-            className="mt-2 sm:mt-0 px-4 py-2 bg-red-600/50 hover:bg-red-700/60 text-white rounded-lg flex items-center transition-colors"
-          >
-            <FiLogOut className={`${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t('auth.logout', 'Logout')}
-          </button>
-        )}
+       
       </div>
 
       {/* User profile header */}
@@ -309,16 +291,7 @@ function Profiler() {
               </span>
             </div>
 
-            <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
-              <span className="text-white/70 flex items-center text-sm">
-                <FiLock className={`${isRTL ? 'ml-2' : 'mr-2'}`} />{' '}
-                {t('auth.password', 'Password:')}
-              </span>
-              <span className="text-white font-medium text-sm">
-                {/* Show password only if viewing own profile */}
-                {!params.id ? user.password : '•••••••'}
-              </span>
-            </div>
+            
 
             <div className="flex justify-between items-center p-3 sm:p-4 bg-white/10 hover:bg-white/15 transition-colors duration-200 rounded-lg">
               <span className="text-white/70 flex items-center text-sm">

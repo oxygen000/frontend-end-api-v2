@@ -35,9 +35,8 @@ function Login() {
     <div
       className="relative w-screen h-screen overflow-hidden"
       style={{
-        backgroundImage:
-          "url('https://limewire.com/decrypt?downloadUrl=https%3A%2F%2Flimewire-filesharing-production.b61cdfd8cf17f52ddc020162e738eb5d.r2.cloudflarestorage.com%2Fbuckets%2Fbe8b6d24-4ac8-45ca-8f63-c1a2e173960c%2Fa4c3ac1b-b0a0-4744-bc5a-e29d10ae416d%3FX-Amz-Algorithm%3DAWS4-HMAC-SHA256%26X-Amz-Date%3D20250511T223100Z%26X-Amz-SignedHeaders%3Dhost%26X-Amz-Credential%3Da1868571dfad6d4fe293ee5b945a0ad5%252F20250511%252Fauto%252Fs3%252Faws4_request%26X-Amz-Expires%3D14400%26X-Amz-Signature%3Da4bd972b1aa23f7281ddf77aaebdc7fd7c35ee0e88851deff315e59220f8f352&mediaType=image%2Fgif&decryptionSession=eyJhZXNKd2tHY20iOnsiYWVzS2V5VHlwZSI6IlNZTU1FVFJJQ19BRVMtR0NNX0tFWSIsImp3ayI6eyJhbGciOiJBMjU2R0NNIiwiZXh0Ijp0cnVlLCJrIjoicXF2cEhmMVMzTmFpS1M4aWJ0SlhMUWpBT0djSGx4dnZyc0VnQS1SWVEtTSIsImtleV9vcHMiOlsiZW5jcnlwdCIsImRlY3J5cHQiXSwia3R5Ijoib2N0In19LCJhZXNKd2tDdHIiOnsiYWVzS2V5VHlwZSI6IlNZTU1FVFJJQ19BRVMtQ1RSX0tFWSIsImp3ayI6eyJhbGciOiJBMjU2Q1RSIiwiZXh0Ijp0cnVlLCJrIjoicXF2cEhmMVMzTmFpS1M4aWJ0SlhMUWpBT0djSGx4dnZyc0VnQS1SWVEtTSIsImtleV9vcHMiOlsiZW5jcnlwdCIsImRlY3J5cHQiXSwia3R5Ijoib2N0In19fQ')",
-        backgroundSize: 'cover',
+        backgroundImage: "url('/login/login.png')",
+        backgroundSize: '100% 100%', 
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
       }}
@@ -45,13 +44,12 @@ function Login() {
       {/* الخلفية */}
 
       {/* المحتوى */}
-      <div className="relative z-10 flex items-center md:justify-end justify-center h-full m-10">
-        <div className="relative w-full max-w-[450px] md:h-[90%] h-[50%] px-4 lg:px-0">
+      <div className="relative z-10 flex items-center md:justify-start justify-center h-full m-10">
+        <div className="relative w-full max-w-[450px] items-center justify-center px-4 lg:px-0">
           <div
-            className="bg-blue-500 bg-opacity-20 rounded-xl shadow-xl p-8 backdrop-blur-sm h-full hover:shadow-2xl transition duration-300"
+            className="bg-[#00e0fb] bg-opacity-20 rounded-xl shadow-xl p-8 backdrop-blur-sm h-full hover:shadow-2xl transition duration-300"
             style={{
-              clipPath: 'polygon(0% 0%, 100% 0%, 100% 80%, 50% 100%, 0% 80%)',
-              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+              backgroundColor: 'rgba(0, 224, 251, 0.2)'              
             }}
           >
             <h2 className="text-3xl font-bold text-center text-white mb-6">
