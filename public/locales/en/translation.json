@@ -144,7 +144,8 @@
   "popups": {
     "addTitle": "Select the type of data to add",
     "identificationTitle": "Select the type you want to check.",
-    "searchTitle": "Select the type you want to check."
+    "searchTitle": "Select the type you want to check.",
+    "selectType": "Select Type"
   },
   "search": {
     "title": "All Registered Users",
