@@ -63,7 +63,7 @@ function Login() {
             <div className="mb-4">
               <label
                 htmlFor="username"
-                className="block text-white text-lg font-medium mb-2"
+                className="block text-white text-lg font-medium mb-2 text-left"
               >
                 User
               </label>
@@ -80,7 +80,7 @@ function Login() {
             <div className="mb-6">
               <label
                 htmlFor="password"
-                className="block text-white text-lg font-medium mb-2"
+                className="block text-white text-lg font-medium mb-2 text-left"
               >
                 Password
               </label>
