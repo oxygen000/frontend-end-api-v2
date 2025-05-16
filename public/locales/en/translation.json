@@ -77,6 +77,7 @@
     "guardianId": "Guardian ID",
     "emergencyPhone": "Emergency Phone",
     "vehicleInfo": "Vehicle Information",
+    "noVehicleInfo": "No vehicle information available",
     "licensePlate": "License Plate",
     "vehicleModel": "Vehicle Model",
     "vehicleColor": "Vehicle Color",

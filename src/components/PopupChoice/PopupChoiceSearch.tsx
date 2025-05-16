@@ -36,7 +36,7 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
         {/* Search options */}
         <div className="grid grid-cols-2 gap-4">
           <Link
-            to="/disabilities"
+            to="/identification"
             className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-purple-600 hover:bg-purple-700"
             aria-label={t('search.formTypes.disabled', 'Disabled')}
             onClick={onClose}
@@ -47,7 +47,7 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
             </span>
           </Link>
           <Link
-            to="/children"
+            to="/identification"
             className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-yellow-600 hover:bg-yellow-700"
             aria-label={t('search.formTypes.child', 'Child')}
             onClick={onClose}
