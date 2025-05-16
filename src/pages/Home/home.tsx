@@ -62,7 +62,7 @@ function Home() {
             {num === 1 && (
               <motion.button
                 onClick={openPopupIdentification}
-                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+                className="px-6 py-2 w-40 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
                 whileHover="hover"
                 variants={buttonVariants}
               >
@@ -72,7 +72,7 @@ function Home() {
             {num === 2 && (
               <motion.button
                 onClick={openPopupSearch}
-                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+                className="px-6 py-2 w-40 text-center bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
                 whileHover="hover"
                 variants={buttonVariants}
               >
@@ -82,7 +82,7 @@ function Home() {
             {num === 3 && (
               <motion.button
                 onClick={openPopup}
-                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+                className="px-6 py-2 w-40 text-center bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
                 whileHover="hover"
                 variants={buttonVariants}
               >
@@ -92,7 +92,7 @@ function Home() {
             {num === 4 && (
               <Link
                 to="/search"
-                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+                className="px-6 py-2 w-40 text-center bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
               >
                 {t('home.bigDataButton', 'Big Data')}
               </Link>
@@ -102,19 +102,19 @@ function Home() {
 
         {/* Lines between buttons */}
         <motion.div
-          className="hidden sm:block absolute bg-white h-1 top-[30%] left-[25%] w-[24%]"
+          className="hidden sm:block absolute bg-white h-1 top-[20%] left-[28%] w-[24%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
         />
         <motion.div
-          className="hidden sm:block absolute bg-white h-1 top-[30%] left-[42%] w-[24%]"
+          className="hidden sm:block absolute bg-white h-1 top-[20%] left-[42%] w-[24%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
         />
         <motion.div
-          className="hidden sm:block absolute bg-white h-1 top-[30%] left-[61%] w-[18%]"
+          className="hidden sm:block absolute bg-white h-1 top-[20%] left-[54%] w-[20%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
