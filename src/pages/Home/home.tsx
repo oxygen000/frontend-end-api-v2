@@ -4,9 +4,11 @@ import PopupChoiceAdd from '../../components/PopupChoice/PopupChoiceAdd';
 import PopupChoiceIdentification from '../../components/PopupChoice/PopupChoiceIdentification';
 import PopupChoiceSearch from '../../components/PopupChoice/PopupChoiceSearch';
 import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
+import { Link } from 'react-router-dom';
 
 function Home() {
   const { t } = useTranslationWithFallback();
+
   const [isPopupAddOpen, setIsPopupAddOpen] = useState(false);
   const [isPopupSearchOpen, setIsPopupSearchOpen] = useState(false);
   const [isPopupIdentificationOpen, setIsPopupIdentificationOpen] =
@@ -33,7 +35,7 @@ function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
       <motion.div
-        className="text-center mb-8"
+        className="text-center mb-12"
         initial="initial"
         animate="animate"
         variants={titleVariants}
@@ -44,82 +46,79 @@ function Home() {
         </h1>
       </motion.div>
 
-      <div className="relative flex flex-col items-center gap-8 sm:grid sm:grid-cols-7 sm:grid-rows-7 sm:gap-4 sm:items-stretch">
-        {/* Button 1 */}
-        <motion.div
-          className="flex flex-col items-center sm:col-start-2 sm:col-end-3 sm:row-start-1 sm:row-end-5"
-          initial="initial"
-          animate="animate"
-          variants={buttonVariants}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <div className="bg-white w-16 h-16 flex justify-center items-center rounded-full border-2 border-gray-800 z-10 mb-2">
-            <span className="text-2xl text-gray-800">1</span>
-          </div>
-          <motion.button
-            onClick={openPopupIdentification}
-            className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
-            whileHover="hover"
+      <div className="relative flex flex-wrap justify-center gap-8">
+        {[1, 2, 3, 4].map((num, index) => (
+          <motion.div
+            key={num}
+            className="flex flex-col items-center"
+            initial="initial"
+            animate="animate"
             variants={buttonVariants}
+            transition={{ duration: 0.5, delay: index * 0.2 }}
           >
-            {t('home.identificationButton', 'Identification Of Unidentified')}
-          </motion.button>
-        </motion.div>
+            <div className="bg-white w-16 h-16 flex justify-center items-center rounded-full border-2 border-gray-800 z-10 mb-4">
+              <span className="text-2xl text-gray-800">{num}</span>
+            </div>
+            {num === 1 && (
+              <motion.button
+                onClick={openPopupIdentification}
+                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+                whileHover="hover"
+                variants={buttonVariants}
+              >
+                {t('home.identificationButton', 'Identification Of Unidentified')}
+              </motion.button>
+            )}
+            {num === 2 && (
+              <motion.button
+                onClick={openPopupSearch}
+                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+                whileHover="hover"
+                variants={buttonVariants}
+              >
+                {t('home.searchButton', 'Search For Missing Persons')}
+              </motion.button>
+            )}
+            {num === 3 && (
+              <motion.button
+                onClick={openPopup}
+                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+                whileHover="hover"
+                variants={buttonVariants}
+              >
+                {t('home.addButton', 'Add New Data')}
+              </motion.button>
+            )}
+            {num === 4 && (
+              <Link
+                to="/search"
+                className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
+              >
+                {t('home.bigDataButton', 'Big Data')}
+              </Link>
+            )}
+          </motion.div>
+        ))}
 
-        {/* Button 2 */}
+        {/* Lines between buttons */}
         <motion.div
-          className="flex flex-col items-center sm:col-start-4 sm:col-end-5 sm:row-start-1 sm:row-end-5"
-          initial="initial"
-          animate="animate"
-          variants={buttonVariants}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <div className="bg-white w-16 h-16 flex justify-center items-center rounded-full border-2 border-gray-800 z-10 mb-2">
-            <span className="text-2xl text-gray-800">2</span>
-          </div>
-          <motion.button
-            onClick={openPopupSearch}
-            className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
-            whileHover="hover"
-            variants={buttonVariants}
-          >
-            {t('home.searchButton', 'Search For Missing Persons')}
-          </motion.button>
-        </motion.div>
-
-        {/* Button 3 */}
-        <motion.div
-          className="flex flex-col items-center sm:col-start-6 sm:col-end-7 sm:row-start-1 sm:row-end-5"
-          initial="initial"
-          animate="animate"
-          variants={buttonVariants}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="bg-white w-16 h-16 flex justify-center items-center rounded-full border-2 border-gray-800 z-10 mb-2">
-            <span className="text-2xl text-gray-800">3</span>
-          </div>
-          <motion.button
-            onClick={openPopup}
-            className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition duration-300"
-            whileHover="hover"
-            variants={buttonVariants}
-          >
-            {t('home.addButton', 'Add New Data')}
-          </motion.button>
-        </motion.div>
-
-        <motion.div
-          className="hidden sm:block absolute bg-white h-1 top-[10%] left-[21%] w-[28%]"
+          className="hidden sm:block absolute bg-white h-1 top-[30%] left-[25%] w-[24%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-        ></motion.div>
+        />
         <motion.div
-          className="hidden sm:block absolute bg-white h-1 top-[10%] left-[52%] w-[28%]"
+          className="hidden sm:block absolute bg-white h-1 top-[30%] left-[42%] w-[24%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
-        ></motion.div>
+        />
+        <motion.div
+          className="hidden sm:block absolute bg-white h-1 top-[30%] left-[61%] w-[18%]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.7 }}
+        />
       </div>
 
       {/* Popups */}

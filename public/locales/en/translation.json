@@ -20,7 +20,8 @@
     "no": "No",
     "verified": "Verified",
     "notAvailable": "Not Available",
-    "hidden": "Hidden"
+    "hidden": "Hidden",
+    "retry": "Retry"
   },
   "relationships": {
     "parent": "Parent",
@@ -40,7 +41,8 @@
     "welcome": "Welcome to our platform",
     "identificationButton": "Identification Of Unidentified",
     "searchButton": "Search For Missing Persons",
-    "addButton": "Add New Data"
+    "addButton": "Add New Data",
+    "bigDataButton": "Big Data"
   },
   "sidebar": {
     "navigation": "Navigation",
@@ -149,9 +151,9 @@
     "selectType": "Select Type"
   },
   "search": {
-    "title": "All Registered Users",
-    "subtitle": "View and search through all registered profiles in the system",
-    "placeholder": "Search any registered user by name, ID, phone, department, or address",
+    "title": "All Registered Data",
+    "subtitle": "View and search through all registered data in the system",
+    "placeholder": "Search any registered data by name, ID, phone, department, or address",
     "toggleFilters": "Toggle filters",
     "switchToListView": "Switch to list view", 
     "switchToGridView": "Switch to grid view",
@@ -182,7 +184,31 @@
     "userDetails": "User Details",
     "refreshing": "Refreshing data...",
     "refreshingText": "Refreshing...",
-    "retrying": "Retrying..."
+    "retrying": "Retrying...",
+    "gridView": "Grid View",
+    "listView": "List View",
+    "filters": "Filters",
+    "refresh": "Refresh Data",
+    "showing": "Showing",
+    "of": "of",
+    "peopleWithDisabilities": "people with disabilities",
+    "searchDisabilities": "Search people with disabilities...",
+    "disabilityType": "Disability Type",
+    "hasMedicalCondition": "Has Medical Condition",
+    "sortByName": "Sort by Name",
+    "sortByDate": "Sort by Date",
+    "specialNeeds": "Special Needs",
+    "children": "children",
+    "searchChildren": "Search children...",
+    "hasGuardianPhone": "Has Guardian Phone",
+    "hasPhysicalDescription": "Has Physical Description",
+    "childrenSearch": "Children Search",
+    "disabilitiesSearch": "Disabilities Search",
+    "specialNeedsSearch": "Special Needs Search",
+    "peopleWithSpecialNeeds": "people with special needs",
+    "searchSpecialNeeds": "Search people with special needs...",
+    "specialNeedsType": "Special Needs Type",
+    "hasEmergencyContact": "Has Emergency Contact"
   },
   "identification": {
     "title": "Face Identification",

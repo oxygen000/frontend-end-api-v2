@@ -1,6 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom'; // Import Link from react-router-dom
-import { FaWheelchair, FaChild } from 'react-icons/fa'; // Import icons from react-icons // Import icons from react-icons
+import {
+  FaWheelchair,
+  FaChild,
+} from 'react-icons/fa'; // Import icons from react-icons
 import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
 
 interface PopupChoiceSearchProps {
@@ -30,12 +33,13 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
           {title}
         </h2>
 
-        {/* Gender options */}
+        {/* Search options */}
         <div className="grid grid-cols-2 gap-4">
           <Link
-            to="/Search"
+            to="/disabilities"
             className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-purple-600 hover:bg-purple-700"
             aria-label={t('search.formTypes.disabled', 'Disabled')}
+            onClick={onClose}
           >
             <FaWheelchair />
             <span className="text-sm">
@@ -43,9 +47,10 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
             </span>
           </Link>
           <Link
-            to="/Search"
+            to="/children"
             className="w-full flex items-center justify-center gap-2 px-4 py-4 text-white rounded-lg font-semibold shadow transition-all duration-200 hover:scale-[1.02] text-xl bg-yellow-600 hover:bg-yellow-700"
             aria-label={t('search.formTypes.child', 'Child')}
+            onClick={onClose}
           >
             <FaChild />
             <span className="text-sm">
@@ -53,6 +58,8 @@ const PopupChoiceSearch: React.FC<PopupChoiceSearchProps> = ({
             </span>
           </Link>
         </div>
+
+        
 
         <button
           onClick={onClose}

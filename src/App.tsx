@@ -16,6 +16,8 @@ import Search from './pages/Search/search';
 import Userdata from './pages/users/userdata';
 import { TranslationProvider } from './contexts/TranslationContext';
 import { Toaster } from 'react-hot-toast';
+import ChildrenSearch from './pages/ChildrenSearch/ChildrenSearch';
+import DisabilitiesSearch from './pages/DisabilitiesSearch/DisabilitiesSearch';
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
           </Route>
           <Route element={<Layout />}>
             <Route path="search" element={<Search />} />
+            <Route path="children" element={<ChildrenSearch />} />
+            <Route path="disabilities" element={<DisabilitiesSearch />} />
             <Route path="identification" element={<Identification />} />
             <Route path="home" element={<Home />} />
             <Route path="profile" element={<Profiler />} />

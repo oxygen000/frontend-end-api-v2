@@ -20,7 +20,8 @@
     "no": "لا",
     "verified": "تم التحقق",
     "notAvailable": "غير متوفر",
-    "hidden": "مخفي"
+    "hidden": "مخفي",
+    "retry": "إعادة المحاولة"
   },
   "relationships": {
     "parent": "الوالد/الوالدة",
@@ -40,7 +41,8 @@
     "welcome": "مرحبًا بك في منصتنا",
     "identificationButton": "التعرف على الأشخاص غير المحددين",
     "searchButton": "البحث عن الأشخاص المفقودين",
-    "addButton": "إضافة بيانات جديدة"
+    "addButton": "إضافة بيانات جديدة",
+    "bigDataButton": "البيانات الكبيرة"
   },
   "sidebar": {
     "navigation": "القائمة",
@@ -149,8 +151,8 @@
     "selectType": "اختر النوع"
   },
   "search": {
-    "title": "جميع المستخدمين المسجلين",
-    "subtitle": "عرض والبحث في جميع الملفات الشخصية المسجلة في النظام",
+    "title": "جميع البيانات المسجلة",
+    "subtitle": "عرض والبحث في جميع البيانات المسجلة في النظام",
     "placeholder": "ابحث عن أي مستخدم مسجل بالاسم أو الهوية أو الهاتف أو القسم أو العنوان",
     "toggleFilters": "تبديل المرشحات",
     "switchToListView": "التبديل إلى عرض القائمة",
@@ -182,7 +184,31 @@
     "userDetails": "تفاصيل المستخدم",
     "refreshing": "جاري تحديث البيانات...",
     "refreshingText": "جاري التحديث...",
-    "retrying": "جاري إعادة المحاولة..."
+    "retrying": "جاري إعادة المحاولة...",
+    "gridView": "عرض الشبكة",
+    "listView": "عرض القائمة",
+    "filters": "المرشحات",
+    "refresh": "تحديث البيانات",
+    "showing": "عرض",
+    "of": "من",
+    "peopleWithDisabilities": "الأشخاص ذوي الإعاقة",
+    "searchDisabilities": "البحث عن الأشخاص ذوي الإعاقة...",
+    "disabilityType": "نوع الإعاقة",
+    "hasMedicalCondition": "لديه حالة طبية",
+    "sortByName": "ترتيب حسب الاسم",
+    "sortByDate": "ترتيب حسب التاريخ",
+    "specialNeeds": "احتياجات خاصة",
+    "children": "أطفال",
+    "searchChildren": "البحث عن الأطفال...",
+    "hasGuardianPhone": "لديه رقم هاتف ولي الأمر",
+    "hasPhysicalDescription": "لديه وصف جسدي",
+    "childrenSearch": "بحث الأطفال",
+    "disabilitiesSearch": "بحث ذوي الإعاقة",
+    "specialNeedsSearch": "بحث ذوي الاحتياجات الخاصة",
+    "peopleWithSpecialNeeds": "الأشخاص ذوي الاحتياجات الخاصة",
+    "searchSpecialNeeds": "البحث عن الأشخاص ذوي الاحتياجات الخاصة...",
+    "specialNeedsType": "نوع الاحتياجات الخاصة",
+    "hasEmergencyContact": "لديه جهة اتصال للطوارئ"
   },
   "identification": {
     "title": "التعرف على الوجه",

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams,  useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiUser,
@@ -266,6 +266,8 @@ function Userdata() {
     user.flight_number ||
     user.return_date;
 
+
+
   const getImageUrl = (
     imagePath: string | null | undefined,
     userName: string
@@ -288,17 +290,18 @@ function Userdata() {
     return `https://backend-fast-api-ai.fly.dev/${formattedPath.replace(/^\/?/, '')}`;
   };
 
+
   return (
     <div className="p-3 sm:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Back button */}
       <div className="mb-4 sm:mb-6 flex justify-between">
-        <Link
-          to="/search"
+        <button
+            onClick={() => navigate(-1)}
           className="px-4 sm:px-6 py-2 bg-blue-600/30 text-white rounded-md hover:bg-blue-700/50 shadow-lg hover:shadow-xl hover:shadow-blue-500/50 backdrop-blur-lg backdrop-opacity-60 transition-all duration-300 text-sm sm:text-base"
         >
           <FiArrowLeft className={`inline ${isRTL ? 'ml-2' : 'mr-2'}`} />
           {t('common.back', 'Back to Search')}
-        </Link>
+        </button>
       </div>
 
       {/* User profile header */}

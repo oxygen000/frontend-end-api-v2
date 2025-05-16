@@ -16,6 +16,7 @@ import {
   FaCalendarAlt,
   FaBuilding,
   FaUserTag,
+
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { useTranslationWithFallback } from '../../hooks/useTranslationWithFallback';
@@ -664,298 +665,319 @@ const Search: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-white/10 backdrop-blur-md rounded-lg">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-white">
-            {t('search.title', 'All Registered Users')}
-          </h2>
-          <p className="text-white/70 mt-1">
-            {t(
-              'search.subtitle',
-              'View and search through all registered profiles in the system'
-            )}
-          </p>
-        </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className={`px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center ${refreshing ? 'opacity-75' : ''}`}
-        >
-          {refreshing ? (
-            <>
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-              {t('search.refreshingText', 'Refreshing...')}
-            </>
-          ) : (
-            t('common.refresh', 'Refresh')
-          )}
-        </button>
+    <div className="min-h-screen p-4 sm:p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          {t('search.title', 'Search')}
+        </h1>
+        <p className="text-white/70">
+          {t('search.subtitle', 'Search and filter registered users')}
+        </p>
       </div>
 
-      {/* Search and View Controls */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative flex-grow">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={handleSearch}
-            placeholder={t(
-              'search.placeholder',
-              'Search any registered user by name, ID, phone, department, or address'
-            )}
-            className="w-full p-3 pl-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <svg
-            className="absolute left-3 top-3.5 h-5 w-5 text-white/70"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </div>
+    
 
-        <div className="flex gap-2">
-          <button
-            onClick={toggleFilters}
-            className={`p-3 rounded-lg transition-colors duration-200 ${showFilters ? 'bg-blue-600 text-white' : 'bg-white/20 text-white/70 hover:bg-white/30'}`}
-            aria-label={t('search.toggleFilters', 'Toggle filters')}
-          >
-            <FaFilter />
-          </button>
-          <button
-            onClick={toggleViewMode}
-            className="p-3 bg-white/20 text-white/70 rounded-lg hover:bg-white/30 transition-colors duration-200"
-            aria-label={
-              viewMode === 'grid'
-                ? t('search.switchToListView', 'Switch to list view')
-                : t('search.switchToGridView', 'Switch to grid view')
-            }
-          >
-            {viewMode === 'grid' ? <FaList /> : <FaThLarge />}
-          </button>
-        </div>
-      </div>
-
-      {/* Filters Panel */}
-      {showFilters && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-lg border border-white/20"
-        >
-          <h3 className="text-white font-semibold text-lg mb-5">
-            {t('search.filterOptions', 'Filter Options')}
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Form Type Dropdown */}
-            <div>
-              <label htmlFor="formType" className="text-white block mb-1">
-                {t('search.formType', 'Form Type')}
-              </label>
-              <select
-                id="formType"
-                name="formType"
-                value={filters.formType}
-                onChange={handleFilterChange}
-                className="w-full p-2 bg-white/20 border border-white/30 rounded "
-              >
-                <option value="">{t('search.all', 'All')}</option>
-                {FORM_TYPES.map(({ value, label }) => (
-                  <option key={value} value={value}>
-                    {t(`search.formTypes.${value}`, label)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sort Buttons */}
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="text-white block mb-2">
-                {t('search.sortBy', 'Sort By')}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: t('search.sortFields.name', 'Name'), field: 'name' },
-                  {
-                    label: t('search.sortFields.date', 'Date'),
-                    field: 'created_at',
-                  },
-                ].map(({ label, field }) => (
-                  <button
-                    key={field}
-                    onClick={() => handleSort(field as SortField)}
-                    className={`flex items-center gap-1 px-3 py-1 rounded transition-colors ${
-                      sortField === field
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white/20 text-white/70 hover:bg-white/30'
-                    }`}
-                  >
-                    {label} {getSortIcon(field as SortField)}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* Search & Controls */}
+      <div className="bg-white/10 backdrop-blur-lg p-4 rounded-lg border border-white/20 mb-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">
+              {t('search.title', 'All Registered Users')}
+            </h2>
+            <p className="text-white/70 mt-1">
+              {t(
+                'search.subtitle',
+                'View and search through all registered profiles in the system'
+              )}
+            </p>
           </div>
-        </motion.div>
-      )}
-
-      {/* Results count with improved styling and view toggle */}
-      <div className="mb-4 text-white/70 flex justify-between items-center">
-        <div>
-          {t('search.found', 'Found')}{' '}
-          <span className="font-medium text-white">{filteredData.length}</span>{' '}
-          {filteredData.length === 1
-            ? t('search.userSingular', 'user')
-            : t('search.userPlural', 'users')}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className={`px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center ${refreshing ? 'opacity-75' : ''}`}
+          >
+            {refreshing ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                {t('search.refreshingText', 'Refreshing...')}
+              </>
+            ) : (
+              t('common.refresh', 'Refresh')
+            )}
+          </button>
         </div>
-      </div>
 
-      {/* Display filtered data with improved animations */}
-      <AnimatePresence mode="wait">
-        {viewMode === 'grid' ? (
-          <motion.div
-            key="grid-view"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {displayedData.length > 0 ? (
-              displayedData.map((user, index) => (
-                <motion.div
-                  key={user.id}
-                  custom={{ isGrid: true, index }}
-                  variants={gridItemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  whileTap="tap"
-                  layoutId={user.id}
-                >
-                  <Card user={adaptUser(user)} />
-                </motion.div>
-              ))
-            ) : (
-              <div className="col-span-full">
-                <NoResultsFound />
-              </div>
-            )}
+        {/* Search and View Controls */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-grow">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder={t(
+                'search.placeholder',
+                'Search any registered user by name, ID, phone, department, or address'
+              )}
+              className="w-full p-3 pl-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <svg
+              className="absolute left-3 top-3.5 h-5 w-5 text-white/70"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
 
-            {/* Intersection observer trigger */}
-            {hasMore && (
-              <div
-                id="load-more-trigger"
-                className="h-10 w-full col-span-full flex justify-center items-center"
-              >
-                {loading && (
-                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-300"></div>
-                )}
-              </div>
-            )}
-          </motion.div>
-        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={toggleFilters}
+              className={`p-3 rounded-lg transition-colors duration-200 ${showFilters ? 'bg-blue-600 text-white' : 'bg-white/20 text-white/70 hover:bg-white/30'}`}
+              aria-label={t('search.toggleFilters', 'Toggle filters')}
+            >
+              <FaFilter />
+            </button>
+            <button
+              onClick={toggleViewMode}
+              className="p-3 bg-white/20 text-white/70 rounded-lg hover:bg-white/30 transition-colors duration-200"
+              aria-label={
+                viewMode === 'grid'
+                  ? t('search.switchToListView', 'Switch to list view')
+                  : t('search.switchToGridView', 'Switch to grid view')
+              }
+            >
+              {viewMode === 'grid' ? <FaList /> : <FaThLarge />}
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
           <motion.div
-            key="list-view"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="space-y-4"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-lg border border-white/20"
           >
-            {displayedData.length > 0 ? (
-              displayedData.map((user, index) => (
-                <motion.div
-                  key={user.id}
-                  custom={{ isGrid: false, index }}
-                  variants={gridItemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  whileTap="tap"
-                  layoutId={user.id}
-                  className="bg-white/20 backdrop-blur-md rounded-lg p-4 border border-white/30"
+            <h3 className="text-white font-semibold text-lg mb-5">
+              {t('search.filterOptions', 'Filter Options')}
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Form Type Dropdown */}
+              <div>
+                <label htmlFor="formType" className="text-white block mb-1">
+                  {t('search.formType', 'Form Type')}
+                </label>
+                <select
+                  id="formType"
+                  name="formType"
+                  value={filters.formType}
+                  onChange={handleFilterChange}
+                  className="w-full p-2 bg-white/20 border border-white/30 rounded "
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-blue-500">
-                      {user.image_path || user.image_url ? (
-                        <img
-                          src={getImageUrl(
-                            user.image_path || user.image_url,
-                            user.name
-                          )}
-                          alt={user.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
-                          }}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-grow">
-                      <h3 className="text-lg font-semibold text-white">
-                        {user.name}
-                      </h3>
-                      {user.category && (
-                        <p className="text-white/70 text-sm">{user.category}</p>
-                      )}
-                      {user.department && (
-                        <p className="text-white/70 text-sm">
-                          {user.department}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-white font-medium">
-                        {user.phone_number || 'N/A'}
-                      </p>
-                      <p className="text-white/70 text-sm">
-                        ID: {user.national_id || user.employee_id || 'N/A'}
-                      </p>
-                    </div>
-                    <Link
-                      to={`/users/${user.id}`}
-                      className="ml-4 px-4 py-2 bg-blue-600/70 cursor-pointer hover:bg-blue-700 text-white rounded transition-colors duration-300 flex-shrink-0"
+                  <option value="">{t('search.all', 'All')}</option>
+                  {FORM_TYPES.map(({ value, label }) => (
+                    <option key={value} value={value}>
+                      {t(`search.formTypes.${value}`, label)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sort Buttons */}
+              <div className="md:col-span-2 lg:col-span-3">
+                <label className="text-white block mb-2">
+                  {t('search.sortBy', 'Sort By')}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    {
+                      label: t('search.sortFields.name', 'Name'),
+                      field: 'name',
+                    },
+                    {
+                      label: t('search.sortFields.date', 'Date'),
+                      field: 'created_at',
+                    },
+                  ].map(({ label, field }) => (
+                    <button
+                      key={field}
+                      onClick={() => handleSort(field as SortField)}
+                      className={`flex items-center gap-1 px-3 py-1 rounded transition-colors ${
+                        sortField === field
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white/20 text-white/70 hover:bg-white/30'
+                      }`}
                     >
-                      {t('common.view', 'View')}
-                    </Link>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <NoResultsFound />
-            )}
-
-            {/* Intersection observer trigger */}
-            {hasMore && (
-              <div
-                id="load-more-trigger"
-                className="h-10 w-full flex justify-center items-center"
-              >
-                {loading && (
-                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-300"></div>
-                )}
+                      {label} {getSortIcon(field as SortField)}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
           </motion.div>
         )}
-      </AnimatePresence>
+
+        {/* Results count with improved styling and view toggle */}
+        <div className="mb-4 text-white/70 flex justify-between items-center">
+          <div>
+            {t('search.found', 'Found')}{' '}
+            <span className="font-medium text-white">
+              {filteredData.length}
+            </span>{' '}
+            {filteredData.length === 1
+              ? t('search.userSingular', 'user')
+              : t('search.userPlural', 'users')}
+          </div>
+        </div>
+
+        {/* Display filtered data with improved animations */}
+        <AnimatePresence mode="wait">
+          {viewMode === 'grid' ? (
+            <motion.div
+              key="grid-view"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {displayedData.length > 0 ? (
+                displayedData.map((user, index) => (
+                  <motion.div
+                    key={user.id}
+                    custom={{ isGrid: true, index }}
+                    variants={gridItemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    whileTap="tap"
+                    layoutId={user.id}
+                  >
+                    <Card user={adaptUser(user)} />
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-full">
+                  <NoResultsFound />
+                </div>
+              )}
+
+              {/* Intersection observer trigger */}
+              {hasMore && (
+                <div
+                  id="load-more-trigger"
+                  className="h-10 w-full col-span-full flex justify-center items-center"
+                >
+                  {loading && (
+                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-300"></div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list-view"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="space-y-4"
+            >
+              {displayedData.length > 0 ? (
+                displayedData.map((user, index) => (
+                  <motion.div
+                    key={user.id}
+                    custom={{ isGrid: false, index }}
+                    variants={gridItemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    whileTap="tap"
+                    layoutId={user.id}
+                    className="bg-white/20 backdrop-blur-md rounded-lg p-4 border border-white/30"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-blue-500">
+                        {user.image_path || user.image_url ? (
+                          <img
+                            src={getImageUrl(
+                              user.image_path || user.image_url,
+                              user.name
+                            )}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+                            }}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-semibold text-white">
+                          {user.name}
+                        </h3>
+                        {user.category && (
+                          <p className="text-white/70 text-sm">
+                            {user.category}
+                          </p>
+                        )}
+                        {user.department && (
+                          <p className="text-white/70 text-sm">
+                            {user.department}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-white font-medium">
+                          {user.phone_number || 'N/A'}
+                        </p>
+                        <p className="text-white/70 text-sm">
+                          ID: {user.national_id || user.employee_id || 'N/A'}
+                        </p>
+                      </div>
+                      <Link
+                        to={`/users/${user.id}`}
+                        className="ml-4 px-4 py-2 bg-blue-600/70 cursor-pointer hover:bg-blue-700 text-white rounded transition-colors duration-300 flex-shrink-0"
+                      >
+                        {t('common.view', 'View')}
+                      </Link>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <NoResultsFound />
+              )}
+
+              {/* Intersection observer trigger */}
+              {hasMore && (
+                <div
+                  id="load-more-trigger"
+                  className="h-10 w-full flex justify-center items-center"
+                >
+                  {loading && (
+                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-300"></div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* User Details Modal with enhanced animations */}
       <AnimatePresence>
