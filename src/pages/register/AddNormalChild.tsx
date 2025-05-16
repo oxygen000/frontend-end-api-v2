@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Input from '../../components/Input';
 import Textarea from '../../components/Textarea';
 import Webcam from 'react-webcam';
-import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
+import { FaCamera, FaUpload, FaRedo, FaSync } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import { BASE_API_URL } from '../../config/constants';
@@ -127,6 +127,7 @@ function AddNormalChild() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [useCamera, setUseCamera] = useState(false);
   const webcamRef = useRef<Webcam>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   // Add state for storing the user ID from response
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
@@ -259,6 +260,11 @@ function AddNormalChild() {
         .querySelector('form')
         ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  };
+
+  // Add function to toggle camera facing mode
+  const toggleCameraFacingMode = () => {
+    setFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
   };
 
   // Enhanced form submission with better error handling and face_id retry
@@ -837,7 +843,6 @@ function AddNormalChild() {
                   <option value="aunt/uncle">
                     {t('relationships.auntUncle', 'Aunt/Uncle')}
                   </option>
-                  
                 </select>
               </div>
               <SectionButtons onPrev={prevSection} onNext={nextSection} />
@@ -991,7 +996,7 @@ function AddNormalChild() {
                             videoConstraints={{
                               width: 480,
                               height: 480,
-                              facingMode: 'user',
+                              facingMode: facingMode,
                             }}
                             className="w-full"
                           />
@@ -1014,15 +1019,41 @@ function AddNormalChild() {
                               />
                             </svg>
                           </div>
+                          <button
+                            type="button"
+                            onClick={toggleCameraFacingMode}
+                            className="absolute bottom-2 right-2 bg-orange-600 text-white p-2 rounded-full hover:bg-orange-700"
+                            aria-label="Switch camera"
+                          >
+                            <FaSync className="text-sm" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center mx-auto text-sm sm:text-base"
-                          onClick={captureImage}
-                        >
-                          <FaCamera className="mr-2" />{' '}
-                          {t('registration.capturePhoto')}
-                        </button>
+                        <div className="flex space-x-2 mt-3 sm:mt-4">
+                          <button
+                            type="button"
+                            className="px-4 sm:px-6 py-1.5 sm:py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center text-sm sm:text-base"
+                            onClick={captureImage}
+                          >
+                            <FaCamera className="mr-2" />{' '}
+                            {t('registration.capturePhoto')}
+                          </button>
+                          <button
+                            type="button"
+                            className="px-4 sm:px-6 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center text-sm sm:text-base"
+                            onClick={toggleCameraFacingMode}
+                          >
+                            <FaSync className="mr-2" />{' '}
+                            {facingMode === 'user'
+                              ? t(
+                                  'registration.switchToBackCamera',
+                                  'Back Camera'
+                                )
+                              : t(
+                                  'registration.switchToFrontCamera',
+                                  'Front Camera'
+                                )}
+                          </button>
+                        </div>
                       </>
                     ) : (
                       <>

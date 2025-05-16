@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import Input from '../../components/Input';
 import Textarea from '../../components/Textarea';
 import { Link } from 'react-router-dom';
-import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
+import { FaCamera, FaUpload, FaRedo, FaSync } from 'react-icons/fa';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import Webcam from 'react-webcam';
 import { toast } from 'react-hot-toast';
@@ -82,6 +82,7 @@ function AddDisabled() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   // Form data structure
   const [personDetails, setPersonDetails] = useState<FormData>(initialFormData);
@@ -157,6 +158,11 @@ function AddDisabled() {
 
   const retakePhoto = () => {
     setCapturedImage(null);
+  };
+
+  // Add function to toggle camera facing mode
+  const toggleCameraFacingMode = () => {
+    setFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
   };
 
   // Unified validation function
@@ -878,7 +884,7 @@ function AddDisabled() {
                           videoConstraints={{
                             width: 480,
                             height: 480,
-                            facingMode: 'user',
+                            facingMode: facingMode,
                           }}
                           className="w-full"
                         />
@@ -901,16 +907,42 @@ function AddDisabled() {
                             />
                           </svg>
                         </div>
+                        <button
+                          type="button"
+                          onClick={toggleCameraFacingMode}
+                          className="absolute bottom-2 right-2 bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700"
+                          aria-label="Switch camera"
+                        >
+                          <FaSync className="text-sm" />
+                        </button>
                       </div>
 
-                      <button
-                        type="button"
-                        className="mt-4 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center mx-auto text-sm sm:text-base"
-                        onClick={captureImage}
-                      >
-                        <FaCamera className="mr-2" />{' '}
-                        {t('registration.capturePhoto', 'Capture Photo')}
-                      </button>
+                      <div className="flex space-x-2 mt-4">
+                        <button
+                          type="button"
+                          className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center text-sm sm:text-base"
+                          onClick={captureImage}
+                        >
+                          <FaCamera className="mr-2" />{' '}
+                          {t('registration.capturePhoto', 'Capture Photo')}
+                        </button>
+                        <button
+                          type="button"
+                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center text-sm sm:text-base"
+                          onClick={toggleCameraFacingMode}
+                        >
+                          <FaSync className="mr-2" />{' '}
+                          {facingMode === 'user'
+                            ? t(
+                                'registration.switchToBackCamera',
+                                'Back Camera'
+                              )
+                            : t(
+                                'registration.switchToFrontCamera',
+                                'Front Camera'
+                              )}
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <>

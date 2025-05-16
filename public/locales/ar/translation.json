@@ -81,6 +81,7 @@
     "chassisNumber": "رقم الشاسيه",
     "vehicleNumber": "رقم المركبة",
     "licenseExpiration": "انتهاء الترخيص",
+    "yearmanufacture":"سنة الصنع",
     "travelInfo": "معلومات السفر",
     "travelDate": "تاريخ السفر",
     "travelDestination": "وجهة السفر",

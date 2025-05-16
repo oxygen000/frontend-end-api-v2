@@ -81,6 +81,7 @@
     "chassisNumber": "Chassis Number",
     "vehicleNumber": "Vehicle Number",
     "licenseExpiration": "License Expiration",
+    "yearmanufacture":"Year of manufacture",
     "travelInfo": "Travel Information",
     "travelDate": "Travel Date",
     "travelDestination": "Travel Destination",

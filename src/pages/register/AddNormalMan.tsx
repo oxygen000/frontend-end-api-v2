@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Input from '../../components/Input';
 import { Link } from 'react-router-dom';
-import { FaCamera, FaUpload, FaRedo } from 'react-icons/fa';
+import { FaCamera, FaUpload, FaRedo, FaSync } from 'react-icons/fa';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import Webcam from 'react-webcam';
 import { toast } from 'react-hot-toast';
@@ -47,6 +47,7 @@ interface FormData {
   chassis_number: string;
   vehicle_number: string;
   license_expiration: string;
+  manufacture_year: string;
 
   // Travel info
   travel_date: string;
@@ -86,6 +87,7 @@ const initialFormData: FormData = {
   chassis_number: '',
   vehicle_number: '',
   license_expiration: '',
+  manufacture_year: '',
   travel_date: '',
   travel_destination: '',
   arrival_airport: '',
@@ -108,6 +110,7 @@ const AddNormalMan = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
   const { t } = useTranslationWithFallback();
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const validateForm = () => {
     const errors: string[] = [];
@@ -401,6 +404,11 @@ const AddNormalMan = () => {
     }
   };
 
+  // Add function to toggle camera facing mode
+  const toggleCameraFacingMode = () => {
+    setFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
+  };
+
   // Enhanced form submission with better error handling and face_id retry
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -463,6 +471,7 @@ const AddNormalMan = () => {
         chassis_number: formData.chassis_number || '',
         vehicle_number: formData.vehicle_number || '',
         license_expiration: formData.license_expiration || '',
+        manufacture_year: formData.manufacture_year || '',
         travel_date: formData.travel_date || '',
         travel_destination: formData.travel_destination || '',
         arrival_airport: formData.arrival_airport || '',
@@ -880,6 +889,16 @@ const AddNormalMan = () => {
                 />
                 <Input
                   label={t(
+                    'registration.yearmanufacture',
+                    'Year of manufacture'
+                  )}
+                  name=" manufacture_year"
+                  type="date"
+                  value={formData.manufacture_year}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label={t(
                     'registration.licenseExpiration',
                     'License Expiration'
                   )}
@@ -960,7 +979,7 @@ const AddNormalMan = () => {
                             videoConstraints={{
                               width: 480,
                               height: 480,
-                              facingMode: 'user',
+                              facingMode: facingMode,
                             }}
                             className="w-full"
                           />
@@ -983,16 +1002,42 @@ const AddNormalMan = () => {
                               />
                             </svg>
                           </div>
+                          <button
+                            type="button"
+                            onClick={toggleCameraFacingMode}
+                            className="absolute bottom-2 right-2 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700"
+                            aria-label="Switch camera"
+                          >
+                            <FaSync className="text-sm" />
+                          </button>
                         </div>
 
-                        <button
-                          type="button"
-                          className="mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto text-sm sm:text-base"
-                          onClick={captureImage}
-                        >
-                          <FaCamera className="mr-2" />{' '}
-                          {t('registration.capturePhoto', 'Capture Photo')}
-                        </button>
+                        <div className="flex space-x-2 mt-3 sm:mt-4">
+                          <button
+                            type="button"
+                            className="px-4 sm:px-6 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm sm:text-base"
+                            onClick={captureImage}
+                          >
+                            <FaCamera className="mr-2" />{' '}
+                            {t('registration.capturePhoto', 'Capture Photo')}
+                          </button>
+                          <button
+                            type="button"
+                            className="px-4 sm:px-6 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center text-sm sm:text-base"
+                            onClick={toggleCameraFacingMode}
+                          >
+                            <FaSync className="mr-2" />{' '}
+                            {facingMode === 'user'
+                              ? t(
+                                  'registration.switchToBackCamera',
+                                  'Back Camera'
+                                )
+                              : t(
+                                  'registration.switchToFrontCamera',
+                                  'Front Camera'
+                                )}
+                          </button>
+                        </div>
                       </>
                     ) : (
                       <>

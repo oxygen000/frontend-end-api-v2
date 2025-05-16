@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { motion } from 'framer-motion';
-import { FaCamera, FaRedo, FaUpload } from 'react-icons/fa';
+import { FaCamera, FaRedo, FaUpload, FaSync } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import AnimatedFaceIcon from '../../components/AnimatedFaceIcon';
 import { registrationApi } from '../../services/api';
@@ -27,9 +27,15 @@ function Identification() {
     id: string;
     name: string;
   } | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const webcamRef = useRef<Webcam>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Toggle camera facing mode
+  const toggleCameraFacingMode = () => {
+    setFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
+  };
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -305,7 +311,7 @@ function Identification() {
                   videoConstraints={{
                     width: 640,
                     height: 480,
-                    facingMode: 'user',
+                    facingMode: facingMode,
                   }}
                   className="w-full h-full object-cover"
                 />
@@ -328,6 +334,18 @@ function Identification() {
                     />
                   </svg>
                 </div>
+                <button
+                  type="button"
+                  onClick={toggleCameraFacingMode}
+                  className="absolute bottom-2 right-2 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700"
+                  aria-label={
+                    facingMode === 'user'
+                      ? 'Switch to back camera'
+                      : 'Switch to front camera'
+                  }
+                >
+                  <FaSync className="text-sm" />
+                </button>
               </div>
             ) : capturedImage ? (
               <img
@@ -385,6 +403,15 @@ function Identification() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center gap-2"
                 >
                   <FaCamera /> {t('identification.capture', 'Capture')}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={toggleCameraFacingMode}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md flex items-center gap-2"
+                >
+                  <FaSync className="mr-2" />
+                  {facingMode === 'user' ? 'Back Camera' : 'Front Camera'}
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
