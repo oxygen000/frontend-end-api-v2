@@ -837,10 +837,7 @@ function AddNormalChild() {
                   <option value="aunt/uncle">
                     {t('relationships.auntUncle', 'Aunt/Uncle')}
                   </option>
-                  <option value="legalGuardian">
-                    {t('relationships.legalGuardian', 'Legal Guardian')}
-                  </option>
-                  <option value="other">{t('common.other', 'Other')}</option>
+                  
                 </select>
               </div>
               <SectionButtons onPrev={prevSection} onNext={nextSection} />
